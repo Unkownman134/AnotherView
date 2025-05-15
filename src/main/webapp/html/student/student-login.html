@@ -16,6 +16,16 @@
 </form>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
+    $("#loginFrom").on("submit", function (e) {
+        e.preventDefault();
+        $.post("/Anotherview/api/studentLogin", $(this).serialize(), function (res) {
+            if (res.success) {
+                window.location.href = "/Anotherview/html/student/student.html";
+            } else {
+                alert(res.message);
+            }
+        }, 'json');
+    });
     $("#roRegister").click(function () {
         window.location.href = "/Anotherview/html/student/student-register.html";
     });
