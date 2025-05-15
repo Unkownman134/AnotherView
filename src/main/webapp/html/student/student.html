@@ -3,8 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <title>学生主页</title>
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
 </head>
 <body>
+<div id="header">
+    <div>欢迎，<span id="studentName"></span></div>
+    <button id="logout">登出</button>
+</div>
 
+<ul id="courseList" class="course-list"></ul>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(function () {
+        $.get("/Anotherview/api/studentInfo", function(student) {
+            $("#studentName").text(student.name);
+        });
+    });
+</script>
 </body>
 </html>
