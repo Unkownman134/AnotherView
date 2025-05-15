@@ -84,4 +84,27 @@ public class StudentDao {
         }
         return false;
     }
+
+    /**
+     * 更新学生的最后登录时间
+     * @param studentNumber 学生学号
+     * @return 如果更新成功，返回 true，否则返回 false
+     */
+    public boolean updateStudentLoginTime(String studentNumber) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+
+        try {
+            conn = DBUtils.getConnection();
+            String sql = "UPDATE student SET last_login = NOW() WHERE student_number = ?";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, studentNumber);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            DBUtils.close(conn, pstmt);
+        }
+        return false;
+    }
 }
