@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>学生注册</title>
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+</head>
+<body>
+<form id="registerFrom">
+    <input name="studentNumber" type="text" placeholder="学号"/><br/>
+    <input name="name" type="text" placeholder="姓名"/><br/>
+    <input name="email" type="email" placeholder="邮箱"/><br/>
+    <input name="school" type="text" placeholder="学校"/><br/>
+    <input name="classof" type="text" placeholder="班级"/><br/>
+    <input name="password" type="password" placeholder="密码"/><br/>
+    <button type="submit">注册</button>
+    <button type="button" id="toLogin">去登录</button>
+</form>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $("#registerFrom").on("submit", function (e) {
+        e.preventDefault();
+        $.post("/Anotherview/api/studentRegister", $(this).serialize(), function (res) {
+            if (res.success) {
+                alert('注册成功，请登录');
+                window.location.href = "/Anotherview/html/student/student-login.html";
+            } else {
+                alert(res.message);
+            }
+        }, 'json');
+    });
+    $("#toLogin").click(function () {
+        window.location.href = "/Anotherview/html/student/student-login.html";
+    });
+</script>
+</body>
+</html>
