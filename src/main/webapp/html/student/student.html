@@ -21,6 +21,12 @@
         $.get("/Anotherview/api/studentInfo", function(student) {
             $("#studentName").text(student.name);
         });
+
+        $("#logout").click(function () {
+            $.post("/Anotherview/api/studentLogout", () => {
+                location.href = "/Anotherview/html/student/student-login.html";
+            });
+        });
     });
 </script>
 </body>
