@@ -36,4 +36,22 @@ public class StudentService {
 
         return studentDao.addStudent(student);
     }
+
+    /**
+     * 学生登录业务逻辑
+     * @param studentNumber 学生学号
+     * @param password 生密码（明文）
+     * @return 如果登录成功返回StudentEntity对象，如果失败返回null
+     */
+    public StudentEntity login(String studentNumber, String password) {
+        //根据学号从数据库获取学生信息
+        StudentEntity student = studentDao.getStudentByStudentNumber(studentNumber);
+        if (student != null && student.getPasswordHash().equals(PasswordUtils.hashPassword(password,student.getPasswordSalt()))) {
+            //调用StudentDao的updateStudentLoginTime方法更新学生的最后登录时间
+            studentDao.updateStudentLoginTime(student.getStudentNumber());
+            return student;
+        } else {
+            return null;
+        }
+    }
 }
