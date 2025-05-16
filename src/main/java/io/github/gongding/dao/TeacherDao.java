@@ -80,4 +80,29 @@ public class TeacherDao {
             DBUtils.close(conn, pstmt);
         }
     }
+
+    /**
+     * 更新教师的最后登录时间
+     *
+     * @param teacherName 教师姓名
+     * @return 如果更新成功，返回true，否则返回false
+     */
+    public boolean updateTeacherLoginTime(String teacherName) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+
+        try {
+            conn = DBUtils.getConnection();
+            String sql = "UPDATE teacher SET last_login = NOW() WHERE name = ?";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, teacherName);
+            int rowsAffected = pstmt.executeUpdate();
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        } finally {
+            DBUtils.close(conn, pstmt);
+        }
+    }
 }
