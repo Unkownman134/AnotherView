@@ -21,6 +21,20 @@
     <h2>练习列表</h2>
 
     <div>
+        <div>
+            <label>选择学期:</label>
+            <div id="semester-filter">
+            </div>
+        </div>
+
+        <div>
+            <div>
+                <input type="text" id="search-input" placeholder="搜索标题、课程、班级...">
+                <button onclick="searchPractice()">搜索</button>
+            </div>
+            <button class="add-practice-btn" onclick="window.location.href='/Anotherview/html/teacher/teacher-add-practice.html'">添加练习</button>
+        </div>
+
         <table>
             <thead>
             <tr>
@@ -52,6 +66,7 @@
             if (teacher && teacher.name) {
                 $("#username").text(teacher.name);
                 teacherIdGlobal = teacher.id;
+                loadSemesters();
                 loadPractices();
             } else {
                 $("#username").text("未知教师");
@@ -73,13 +88,44 @@
         });
     }
 
+    function loadSemesters() {
+        $.get("/Anotherview/api/semesters", function(semesters) {
+            const $semesterFilter = $("#semester-filter");
+            $semesterFilter.empty();
+            $semesterFilter.append('<button class="semester-button" data-semester-id="all">全部学期</button>');
+            semesters.forEach(semester => {
+                $semesterFilter.append(`<button class="semester-button" data-semester-id="${semester.id}">${semester.name}</button>`);
+            });
+
+            $(".semester-button").click(function() {
+                $(".semester-button").removeClass("active");
+                $(this).addClass("active");
+                loadPractices(); // Reload practices when semester filter changes
+            });
+
+            $("#semester-filter button:first").addClass("active"); // Select "全部学期" by default
+        });
+    }
+
     function loadPractices() {
         $("#loading-message").show();
         $("#no-data-message").hide();
         $("#practice-list").empty();
 
+        const searchTerm = $("#search-input").val().trim();
+        const selectedSemesterId = $("#semester-filter button.active").data("semester-id");
+
+
         const apiUrl = '/Anotherview/api/teacher/practices';
         const params = {};
+
+        if (selectedSemesterId && selectedSemesterId !== 'all') {
+            params.semesterId = selectedSemesterId;
+        }
+
+        if (searchTerm) {
+            params.searchTerm = searchTerm;
+        }
 
         $.ajax({
             url: apiUrl,
@@ -103,6 +149,10 @@
         });
     }
 
+    function searchPractice() {
+        loadPractices();
+    }
+
     function renderPractices(practices) {
         const $practiceListTbody = $("#practice-list");
         $practiceListTbody.empty();
@@ -119,9 +169,9 @@
                         <td>${formatDisplayDateTime(practice.endAt)}</td>
                         <td><span>${statusDisplay.text}</span></td>
                         <td>
-                            <button>修改</button>
-                            <button>延长</button>
-                            <button>复用</button>
+                            <button onclick="editPractice(${practice.id})">修改</button>
+                            <button onclick="openExtendTimeModal(${practice.id}, '${practice.endAt}')">延长</button>
+                            <button onclick="reusePractice(${practice.id})">复用</button>
                         </td>
                     </tr>
                 `;
@@ -142,7 +192,6 @@
             const minutes = ('0' + date.getMinutes()).slice(-2);
             return `${year}-${month}-${day} ${hours}:${minutes}`;
         } catch (e) {
-            console.error("Error formatting date:", dateTimeStr, e);
             return dateTimeStr;
         }
     }
