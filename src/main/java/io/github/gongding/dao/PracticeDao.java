@@ -193,6 +193,57 @@ public class PracticeDao {
     }
 
     /**
+     * 根据教师ID和搜索词查询练习列表
+     * 在练习标题、课程标题或班级信息字符串中进行模糊匹配
+     * @param teacherId 教师ID
+     * @param searchTerm 搜索词
+     * @return 返回匹配条件的练习列表，如果找不到则返回空列表
+     */
+    public List<Map<String, Object>> getPracticesByTeacherIdAndSearchTerm(int teacherId, String searchTerm) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        List<Map<String, Object>> practicesData = new ArrayList<>();
+        try {
+            conn = DBUtils.getConnection();
+            //同时在 practice.title,lesson.title,practice.classof字段中使用LIKE进行模糊匹配
+            String sql = "SELECT p.*, l.title as lesson_title FROM practice p JOIN lesson l ON p.lesson_id = l.lesson_id WHERE p.teacher_id = ? AND (p.title LIKE ? OR l.title LIKE ? OR p.classof LIKE ?)"; // Added p.classof
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, teacherId);
+            //设置搜索词的占位符值，使用%进行模糊匹配
+            pstmt.setString(2, "%" + searchTerm + "%");
+            pstmt.setString(3, "%" + searchTerm + "%");
+            pstmt.setString(4, "%" + searchTerm + "%");
+            rs = pstmt.executeQuery();
+            while (rs.next()) {
+                PracticeEntity practice = buildPracticeEntity(rs);
+                String lessonName = rs.getString("lesson_title");
+
+                Map<String, Object> practiceMap = new HashMap<>();
+                practiceMap.put("id", practice.getId());
+                practiceMap.put("lessonId", practice.getLessonId());
+                practiceMap.put("teacherId", practice.getTeacherId());
+                practiceMap.put("semesterId", practice.getSemesterId());
+                practiceMap.put("title", practice.getTitle());
+                practiceMap.put("questionNum", practice.getQuestionNum());
+                practiceMap.put("classof", practice.getClassof());
+                practiceMap.put("status", practice.getStatus());
+                practiceMap.put("startAt", practice.getStartAt());
+                practiceMap.put("endAt", practice.getEndAt());
+                practiceMap.put("createdAt", practice.getCreatedAt());
+                practiceMap.put("lessonName", lessonName);
+
+                practicesData.add(practiceMap);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            DBUtils.close(conn, pstmt, rs);
+        }
+        return practicesData;
+    }
+
+    /**
      * 辅助方法：从ResultSet中构建PracticeEntity对象
      * @param rs 结果集
      * @return 构建好的PracticeEntity对象
