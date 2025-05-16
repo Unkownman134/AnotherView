@@ -1,10 +1,15 @@
 package io.github.gongding.dao;
 
+import io.github.gongding.entity.PracticeEntity;
 import io.github.gongding.util.DBUtils;
 import io.github.gongding.util.PracticeStatusUtils;
 
 import java.sql.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class PracticeDao {
     /**
@@ -92,5 +97,119 @@ public class PracticeDao {
             DBUtils.close(conn, pstmt, rs);
         }
         return newPracticeId;
+    }
+
+    /**
+     * 根据教师ID和学期ID查询练习列表
+     * @param teacherId 教师ID
+     * @param semesterId 学期ID
+     * @return 返回匹配条件的练习列表，每个练习为一个Map对象
+     */
+    public List<Map<String, Object>> getPracticesByTeacherIdAndSemesterId(int teacherId, int semesterId) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        List<Map<String, Object>> practicesData = new ArrayList<>();
+        try {
+            conn = DBUtils.getConnection();
+            String sql = "SELECT p.*, l.title as lesson_title FROM practice p JOIN lesson l ON p.lesson_id = l.lesson_id WHERE p.teacher_id = ? AND p.semester_id = ?";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, teacherId);
+            pstmt.setInt(2, semesterId);
+            rs = pstmt.executeQuery();
+            while (rs.next()) {
+                PracticeEntity practice = buildPracticeEntity(rs);
+                String lessonName = rs.getString("lesson_title");
+
+                //将PracticeEntity的字段和课程名称放入一个Map中
+                Map<String, Object> practiceMap = new HashMap<>();
+                practiceMap.put("id", practice.getId());
+                practiceMap.put("lessonId", practice.getLessonId());
+                practiceMap.put("teacherId", practice.getTeacherId());
+                practiceMap.put("semesterId", practice.getSemesterId());
+                practiceMap.put("title", practice.getTitle());
+                practiceMap.put("questionNum", practice.getQuestionNum());
+                practiceMap.put("classof", practice.getClassof());
+                practiceMap.put("status", practice.getStatus());
+                practiceMap.put("startAt", practice.getStartAt());
+                practiceMap.put("endAt", practice.getEndAt());
+                practiceMap.put("createdAt", practice.getCreatedAt());
+                practiceMap.put("lessonName", lessonName); // 添加课程名称
+
+                practicesData.add(practiceMap);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            DBUtils.close(conn, pstmt, rs);
+        }
+        return practicesData;
+    }
+
+    /**
+     * 根据教师ID查询所有练习列表
+     * @param teacherId 教师ID
+     * @return 返回匹配条件的练习列表，每个练习为一个Map对象
+     */
+    public List<Map<String, Object>> getPracticesByTeacherId(int teacherId) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        List<Map<String, Object>> practicesData = new ArrayList<>(); // 返回 Map 列表
+        try {
+            conn = DBUtils.getConnection();
+            String sql = "SELECT p.*, l.title as lesson_title FROM practice p JOIN lesson l ON p.lesson_id = l.lesson_id WHERE p.teacher_id = ?";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, teacherId);
+
+            rs = pstmt.executeQuery();
+            while (rs.next()) {
+                //调用辅助方法构建PracticeEntity，虽然最终返回的是Map
+                PracticeEntity practice = buildPracticeEntity(rs);
+                String lessonName = rs.getString("lesson_title");
+
+                Map<String, Object> practiceMap = new HashMap<>();
+                practiceMap.put("id", practice.getId());
+                practiceMap.put("lessonId", practice.getLessonId());
+                practiceMap.put("teacherId", practice.getTeacherId());
+                practiceMap.put("semesterId", practice.getSemesterId());
+                practiceMap.put("title", practice.getTitle());
+                practiceMap.put("questionNum", practice.getQuestionNum());
+                practiceMap.put("classof", practice.getClassof());
+                practiceMap.put("status", practice.getStatus());
+                practiceMap.put("startAt", practice.getStartAt());
+                practiceMap.put("endAt", practice.getEndAt());
+                practiceMap.put("createdAt", practice.getCreatedAt());
+                practiceMap.put("lessonName", lessonName); // 添加课程名称
+
+                practicesData.add(practiceMap);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            DBUtils.close(conn, pstmt, rs);
+        }
+        return practicesData;
+    }
+
+    /**
+     * 辅助方法：从ResultSet中构建PracticeEntity对象
+     * @param rs 结果集
+     * @return 构建好的PracticeEntity对象
+     * @throws SQLException 如果访问结果集发生错误
+     */
+    private PracticeEntity buildPracticeEntity(ResultSet rs) throws SQLException {
+        PracticeEntity practice = new PracticeEntity();
+        practice.setId(rs.getInt("practice_id"));
+        practice.setLessonId(rs.getInt("lesson_id"));
+        practice.setTeacherId(rs.getInt("teacher_id"));
+        practice.setTitle(rs.getString("title"));
+        practice.setQuestionNum(rs.getInt("question_num"));
+        practice.setStartAt(rs.getTimestamp("start_time").toLocalDateTime());
+        practice.setEndAt(rs.getTimestamp("end_time").toLocalDateTime());
+        practice.setStatus(rs.getString("status"));
+        practice.setClassof(rs.getString("classof"));
+        practice.setSemesterId(rs.getInt("semester_id"));
+        return practice;
     }
 }
