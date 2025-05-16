@@ -18,16 +18,45 @@
 </div>
 
 <div>
-    <button onclick="window.location.href='teacher-add-practice.html'">+ 添加新练习</button>
+    <h2>练习列表</h2>
+
+    <div>
+        <table>
+            <thead>
+            <tr>
+                <th>练习标题</th>
+                <th>所属课程</th>
+                <th>班级</th>
+                <th>题目数量</th>
+                <th>开始时间</th>
+                <th>截止时间</th>
+                <th>状态</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+            <tbody id="practice-list">
+            </tbody>
+        </table>
+        <div id="loading-message" style="display: none;">加载中...</div>
+        <div id="no-data-message" style="display: none;">没有找到匹配的练习。</div>
+    </div>
+
 </div>
+
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
 <script>
+    let teacherIdGlobal = null;
+
     $(document).ready(function () {
         $.get("/Anotherview/api/teacherInfo", function (teacher) {
             if (teacher && teacher.name) {
                 $("#username").text(teacher.name);
+                teacherIdGlobal = teacher.id;
+                loadPractices();
             } else {
                 $("#username").text("未知教师");
+                alert("无法获取教师信息，请重新登录。");
+                window.location.href = "/Anotherview/html/teacher/teacher-login.html";
             }
         }).fail(() => {
             alert("无法获取教师信息，请重新登录。");
@@ -42,6 +71,93 @@
         }).fail(() => {
             alert("退出失败");
         });
+    }
+
+    function loadPractices() {
+        $("#loading-message").show();
+        $("#no-data-message").hide();
+        $("#practice-list").empty();
+
+        const apiUrl = '/Anotherview/api/teacher/practices';
+        const params = {};
+
+        $.ajax({
+            url: apiUrl,
+            type: 'GET',
+            dataType: 'json',
+            data: params,
+            success: function (practices) {
+                $("#loading-message").hide();
+                if (practices.length === 0) {
+                    $("#no-data-message").show();
+                } else {
+                    renderPractices(practices);
+                }
+            },
+            error: function (xhr, status, error) {
+                $("#loading-message").hide();
+                $("#no-data-message").text("加载练习失败。").show();
+                console.error("Error loading practices:", error);
+                alert('加载练习失败: ' + (xhr.responseJSON ? xhr.responseJSON.message : xhr.responseText));
+            }
+        });
+    }
+
+    function renderPractices(practices) {
+        const $practiceListTbody = $("#practice-list");
+        $practiceListTbody.empty();
+
+        practices.forEach(practice => {
+            const statusDisplay = getStatusDisplay(practice.status);
+            const row = `
+                    <tr>
+                        <td>${practice.title}</td>
+                        <td>${practice.lessonName || '未知课程'}</td>
+                        <td>${practice.classof}</td>
+                        <td>${practice.questionNum || 0}</td>
+                        <td>${formatDisplayDateTime(practice.startAt)}</td>
+                        <td>${formatDisplayDateTime(practice.endAt)}</td>
+                        <td><span>${statusDisplay.text}</span></td>
+                        <td>
+                            <button>修改</button>
+                            <button>延长</button>
+                            <button>复用</button>
+                        </td>
+                    </tr>
+                `;
+            $practiceListTbody.append(row);
+        });
+    }
+
+    function formatDisplayDateTime(dateTimeStr) {
+        if (!dateTimeStr) return "";
+        try {
+            const date = new Date(dateTimeStr);
+            if (isNaN(date.getTime())) return dateTimeStr;
+
+            const year = date.getFullYear();
+            const month = ('0' + (date.getMonth() + 1)).slice(-2);
+            const day = ('0' + date.getDate()).slice(-2);
+            const hours = ('0' + date.getHours()).slice(-2);
+            const minutes = ('0' + date.getMinutes()).slice(-2);
+            return `${year}-${month}-${day} ${hours}:${minutes}`;
+        } catch (e) {
+            console.error("Error formatting date:", dateTimeStr, e);
+            return dateTimeStr;
+        }
+    }
+
+    function getStatusDisplay(status) {
+        switch (status) {
+            case 'not_started':
+                return {text: '未开始'};
+            case 'in_progress':
+                return {text: '进行中'};
+            case 'ended':
+                return {text: '已结束'};
+            default:
+                return {text: status || '未知'};
+        }
     }
 </script>
 
