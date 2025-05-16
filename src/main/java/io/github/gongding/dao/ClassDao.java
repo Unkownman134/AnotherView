@@ -7,6 +7,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ClassDao {
     /**
@@ -38,5 +40,37 @@ public class ClassDao {
             DBUtils.close(conn, pstmt, rs);
         }
         return cls;
+    }
+
+    /**
+     * 根据教师ID获取班级列表
+     * @param teacherId 教师ID
+     * @return 班级实体列表
+     */
+    public List<ClassEntity> getClassesByTeacherId(int teacherId) {
+        List<ClassEntity> classes = new ArrayList<>();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        try {
+            conn = DBUtils.getConnection();
+            String sql = "SELECT c.class_id, c.name FROM class c JOIN class_teacher ct ON c.class_id = ct.class_id WHERE ct.teacher_id = ?";
+
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, teacherId);
+            rs = pstmt.executeQuery();
+            while (rs.next()) {
+                ClassEntity cls = new ClassEntity();
+                cls.setId(rs.getInt("class_id"));
+                cls.setName(rs.getString("name"));
+                classes.add(cls);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            DBUtils.close(conn, pstmt, rs);
+        }
+        return classes;
     }
 }
