@@ -23,4 +23,14 @@ public class TeacherService {
 
         return teacherDao.addTeacher(teacher);
     }
+
+    public TeacherEntity login(String name, String password) {
+        TeacherEntity teacher = teacherDao.getTeacherByTeacherName(name);
+        if (teacher != null && teacher.getPasswordHash().equals(PasswordUtils.hashPassword(password, teacher.getPasswordSalt()))) {
+            teacherDao.updateTeacherLoginTime(teacher.getName());
+            return teacher;
+        } else {
+            return null;
+        }
+    }
 }
