@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>添加练习</title>
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+</head>
+<body>
+<div class="form-row">
+    <label>练习名称:</label>
+    <input type="text" id="practiceTitle" required>
+</div>
+<div class="form-row">
+    <label>所属课程:</label>
+    <select id="lessonSelect"></select>
+</div>
+<div class="form-row">
+    <label>所属班级:</label>
+    <div id="classCheckboxGroup" class="checkbox-group"></div>
+</div>
+<div class="form-row">
+    <label>开始时间:</label>
+    <input type="datetime-local" id="startTime" required>
+</div>
+<div class="form-row">
+    <label>结束时间:</label>
+    <input type="datetime-local" id="endTime" required>
+</div>
+<button onclick="openQuestionModal()">题库选题</button>
+
+<table id="questionTable">
+    <thead>
+    <tr>
+        <th>序号</th>
+        <th>题目简介</th>
+        <th>题型</th>
+        <th>分值</th>
+        <th>操作</th>
+    </tr>
+    </thead>
+    <tbody id="selectedQuestions"></tbody>
+</table>
+
+<div id="questionModal" class="modal">
+    <div class="modal-content">
+        <h3>题库选题（课程：<span id="currentLesson"></span>）</h3>
+        <div id="questionList"></div>
+        <button onclick="confirmSelection()">确认选择</button>
+        <button onclick="closeModal()">关闭</button>
+    </div>
+</div>
+
+<button onclick="submitPractice()">确定</button>
+<button onclick="location.href='teacher.html'">返回</button>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    let selectedQuestions = [];
+    let currentLessonId = null;
+
+    $(function () {
+        loadLessons();
+        loadClasses();
+    });
+
+    function loadLessons() {
+        $.get("/Anotherview/api/teacher/lessons", lessons => {
+            $("#lessonSelect").empty();
+            lessons.forEach(lesson => {
+                $("#lessonSelect").append(`<option value="${lesson.id}">${lesson.title}</option>`);
+            });
+            currentLessonId = $("#lessonSelect").val();
+        });
+    }
+
+    function loadClasses() {
+        $.get("/Anotherview/api/teacher/classes", classes => {
+            const container = $("#classCheckboxGroup").empty();
+            classes.forEach(cls => {
+                container.append(`
+                <div class="checkbox-item">
+                    <label>
+                        <input type="checkbox" value="${cls.id}">
+                        ${cls.name}
+                    </label>
+                </div>
+            `);
+            });
+        });
+    }
+
+    function openQuestionModal() {
+        currentLessonId = $("#lessonSelect").val();
+        if (!currentLessonId) {
+            alert("请先选择课程！");
+            return;
+        }
+        $("#currentLesson").text($("#lessonSelect option:selected").text());
+        $("#questionModal").show();
+
+        $.get(`/Anotherview/api/teacher/questions?lessonId=${currentLessonId}`, questions => {
+            const container = $("#questionList").empty();
+            questions.forEach(q => {
+                const isSelected = selectedQuestions.some(sq => sq.id === q.id);
+                container.append(`
+                    <div class="question-item">
+                        <label>
+                            <input type="checkbox" value='${JSON.stringify(q)}' ${isSelected ? 'checked' : ''}>
+                            ${q.content.substring(0, 50)}...（题型：${q.type}，分值：${q.score}）
+                        </label>
+                    </div>
+                `);
+            });
+        });
+    }
+
+    function confirmSelection() {
+        const newSelected = [];
+        $("#questionList input:checked").each(function () {
+            newSelected.push(JSON.parse($(this).val()));
+        });
+        selectedQuestions = [...new Set([...selectedQuestions, ...newSelected])];
+        renderSelectedQuestions();
+        closeModal();
+    }
+
+    function renderSelectedQuestions() {
+        const tbody = $("#selectedQuestions").empty();
+        selectedQuestions.forEach((q, index) => {
+            tbody.append(`
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${q.content.substring(0, 30)}...</td>
+                    <td>${q.type}</td>
+                    <td>${q.score}</td>
+                    <td><button onclick="deleteQuestion(${index})">删除</button></td>
+                </tr>
+            `);
+        });
+    }
+
+    function deleteQuestion(index) {
+        selectedQuestions.splice(index, 1);
+        renderSelectedQuestions();
+    }
+
+    function closeModal() {
+        $("#questionModal").hide();
+    }
+
+    function submitPractice() {
+        const classIds = [];
+        $("#classCheckboxGroup input:checked").each(function () {
+            const id = parseInt($(this).val(), 10);
+            if (!isNaN(id)) classIds.push(id);
+        });
+
+        const practiceData = {
+            title: $("#practiceTitle").val(),
+            lessonId: currentLessonId,
+            classIds: classIds,
+            questionIds: selectedQuestions.map(q => q.id),
+            startTime: $("#startTime").val(),
+            endTime: $("#endTime").val()
+        };
+
+        if (practiceData.classIds.length === 0) {
+            alert("请至少选择一个班级！");
+            return;
+        }
+
+        if (practiceData.questionIds.length === 0) {
+            alert("请至少选择一个题目！");
+            return;
+        }
+
+        $.ajax({
+            url: "/Anotherview/api/teacher/practice",
+            method: "POST",
+            contentType: "application/json",
+            data: JSON.stringify(practiceData),
+            success: () => location.href = "teacher.html",
+            error: (xhr) => alert("提交失败：" + xhr.responseText)
+        });
+    }
+</script>
+</body>
+</html>
