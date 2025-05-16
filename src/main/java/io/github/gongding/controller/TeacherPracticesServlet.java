@@ -30,6 +30,7 @@ public class TeacherPracticesServlet extends HttpServlet {
 
         TeacherEntity teacher = (TeacherEntity) session.getAttribute("teacher");
         String semesterIdStr = req.getParameter("semesterId");
+        String searchTerm = req.getParameter("searchTerm");
 
         List<Map<String, Object>> practicesData;
 
@@ -41,6 +42,8 @@ public class TeacherPracticesServlet extends HttpServlet {
                 resp.sendError(400, "Invalid semester ID");
                 return;
             }
+        } else if (searchTerm != null && !searchTerm.isEmpty()) {
+            practicesData = practiceDao.getPracticesByTeacherIdAndSearchTerm(teacher.getId(), searchTerm);
         } else {
             practicesData = practiceDao.getPracticesByTeacherId(teacher.getId());
         }
