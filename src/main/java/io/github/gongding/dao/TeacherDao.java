@@ -105,4 +105,59 @@ public class TeacherDao {
             DBUtils.close(conn, pstmt);
         }
     }
+
+    /**
+     * 根据教师ID获取教师实体
+     * @param id 教师ID
+     * @return 教师实体，如果未找到则返回null
+     */
+    public TeacherEntity getTeacherById(int id) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        TeacherEntity teacher = null;
+
+        try {
+            conn = DBUtils.getConnection();
+            String sql = "SELECT * FROM teacher WHERE teacher_id = ?"; // Query by teacher_id
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, id);
+            rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                teacher = buildTeacherEntity(rs);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            DBUtils.close(conn, pstmt, rs);
+        }
+        return teacher;
+    }
+
+    /**
+     * 辅助方法：从数据库查询结果集中构建TeacherEntity对象。
+     *
+     * @param rs 包含教师数据的数据库查询结果集。
+     * @return 一个填充了从结果集获取的数据的TeacherEntity对象。
+     * @throws SQLException 如果在访问结果集时发生数据库访问错误。
+     */
+    private TeacherEntity buildTeacherEntity(ResultSet rs) throws SQLException {
+        TeacherEntity teacher = new TeacherEntity();
+        Calendar shanghaiCalendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Shanghai"));
+
+        teacher.setId(rs.getInt("teacher_id"));
+        teacher.setName(rs.getString("name"));
+        teacher.setEmail(rs.getString("email"));
+        teacher.setPasswordSalt(rs.getString("password_salt"));
+        teacher.setPasswordHash(rs.getString("password_hash"));
+
+        Timestamp lastLoginTs = rs.getTimestamp("last_login", shanghaiCalendar);
+        Timestamp createdAtTs = rs.getTimestamp("created_at", shanghaiCalendar);
+
+        teacher.setLastLogin(lastLoginTs != null ? lastLoginTs.toLocalDateTime() : null);
+        teacher.setCreatedAt(createdAtTs != null ? createdAtTs.toLocalDateTime() : null);
+
+        return teacher;
+    }
 }
