@@ -121,4 +121,65 @@ public class QuestionDao {
         }
         return questions;
     }
+
+    /**
+     * 根据题目的唯一标识符ID查询单个题目的详细信息。
+     * 这个方法执行数据库读取操作，返回一个QuestionEntity对象。
+     * 除了题目的基本信息外，对于选择题，它还会处理选项的生成和随机排序。
+     */
+    public QuestionEntity getQuestionById(int questionId) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        QuestionEntity question = null;
+
+        try {
+            conn = DBUtils.getConnection();
+            String sql = "SELECT * FROM question WHERE question_id = ?";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, questionId);
+            rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                question = new QuestionEntity();
+                question.setId(rs.getInt("question_id"));
+                question.setLessonId(rs.getInt("lesson_id"));
+                question.setContent(rs.getString("content"));
+                question.setCorrectAnswer(rs.getString("correct_answer"));
+                question.setErrorAnswer(rs.getString("error_answer"));
+                question.setType(rs.getString("type"));
+                question.setDifficulty(rs.getString("difficulty"));
+                question.setScore(rs.getDouble("score"));
+
+                //检查题目类型是否是单选或多选
+                if ("single_choice".equals(question.getType()) || "multiple_choice".equals(question.getType())) {
+                    List<String> options = new ArrayList<>();
+                    String correct = question.getCorrectAnswer();
+                    String error = question.getErrorAnswer();
+                    if (correct != null && !correct.trim().isEmpty()) {
+                        Arrays.stream(correct.split(","))
+                                .map(String::trim)
+                                .filter(s -> !s.isEmpty())
+                                .forEach(options::add);
+                    }
+                    if (error != null && !error.trim().isEmpty()) {
+                        Arrays.stream(error.split(","))
+                                .map(String::trim)
+                                .filter(s -> !s.isEmpty())
+                                .forEach(options::add);
+                    }
+                    //打乱选项的顺序，使其随机显示给用户
+                    Collections.shuffle(options);
+                    question.setOptions(options);
+                } else {
+                    question.setOptions(Collections.emptyList());
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            DBUtils.close(conn, pstmt, rs);
+        }
+        return question;
+    }
 }
