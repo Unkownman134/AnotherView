@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>修改练习</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap');
+
+    body {
+      font-family: 'Nunito', sans-serif;
+      transition: background-color 0.3s ease;
+      background-color: #f4f7f6;
+    }
+
+    .transition-all {
+      transition: all 0.3s ease-in-out;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0, 0, 0, 0);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: background-color 0.4s ease, opacity 0.4s ease;
+      pointer-events: none;
+    }
+
+    .modal.is-visible {
+      display: flex;
+      background-color: rgba(0, 0, 0, 0.4);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-content {
+      background-color: #fefefe;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      width: 90%;
+      max-width: 700px;
+      max-height: 80vh;
+      overflow-y: auto;
+      position: relative;
+      transform: scale(0.8);
+      opacity: 0;
+      transition: transform 0.4s ease, opacity 0.4s ease;
+    }
+
+    .modal.is-visible .modal-content {
+      transform: scale(1);
+      opacity: 1;
+    }
+
+    .close-button {
+      color: #aaa;
+      font-size: 28px;
+      font-weight: bold;
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      cursor: pointer;
+      transition: color 0.3s ease, transform 0.2s ease;
+      z-index: 10;
+    }
+
+    .close-button:hover,
+    .close-button:focus {
+      color: #777;
+      transform: rotate(90deg);
+      outline: none;
+    }
+
+    .btn {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 5px;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.5);
+      opacity: 0;
+      border-radius: 100%;
+      transform: scale(1, 1) translate(-50%, -50%);
+      transform-origin: 50% 50%;
+    }
+
+    .btn:focus:not(:active)::after {
+      animation: ripple 1s ease-out;
+    }
+
+    @keyframes ripple {
+      0% {
+        opacity: 0.5;
+        transform: scale(0, 0);
+      }
+      100% {
+        opacity: 0;
+        transform: scale(20, 20);
+      }
+    }
+
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #a1a1a1;
+    }
+
+    .tooltip {
+      position: relative;
+      display: inline-block;
+    }
+
+    .tooltip .tooltiptext {
+      visibility: hidden;
+      width: 120px;
+      background-color: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      text-align: center;
+      border-radius: 6px;
+      padding: 5px;
+      position: absolute;
+      z-index: 1;
+      bottom: 125%;
+      left: 50%;
+      transform: translateX(-50%);
+      opacity: 0;
+      transition: opacity 0.3s, transform 0.3s;
+      transform-origin: bottom center;
+
+      &::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        margin-left: -5px;
+        border-width: 5px;
+        border-style: solid;
+        border-color: rgba(0, 0, 0, 0.8) transparent transparent transparent;
+      }
+    }
+
+    .tooltip:hover .tooltiptext {
+      visibility: visible;
+      opacity: 1;
+      transform: translateX(-50%) translateY(-5px);
+    }
+
+    button {
+      writing-mode: horizontal-tb;
+      text-orientation: mixed;
+    }
+
+  </style>
+</head>
+<body class="bg-gray-100 p-6 font-sans">
+<div class="form-container bg-white p-6 rounded-lg shadow-md max-w-4xl mx-auto">
+  <h2 class="text-2xl font-bold mb-4 text-gray-800 border-b pb-4 flex items-center">
+    <i class="fas fa-edit text-blue-500 mr-3" aria-hidden="true"></i> 修改练习
+  </h2>
+  <div id="status-message" class="mb-4 text-center font-bold text-amber-600" style="display: none;"></div>
+  <form id="changePracticeForm">
+    <input type="hidden" id="practiceId" name="practiceId" value="" />
+    <input type="hidden" id="lessonId" name="lessonId" value="" />
+    <input type="hidden" id="teacherId" name="teacherId" value="" />
+    <input type="hidden" id="semesterId" name="semesterId" value="" />
+    <div class="mb-4">
+      <label for="practiceTitle" class="block text-gray-700 text-sm font-bold mb-2 flex items-center">
+        <i class="fas fa-heading text-blue-500 mr-2" aria-hidden="true"></i> 练习名称: </label>
+      <input type="text" id="practiceTitle" name="practiceTitle" value="" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all" />
+    </div>
+    <div class="mb-4">
+      <label for="lessonName" class="block text-gray-700 text-sm font-bold mb-2 flex items-center">
+        <i class="fas fa-book-open text-indigo-500 mr-2" aria-hidden="true"></i> 课程名称: </label>
+      <input type="text" id="lessonName" name="lessonName" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight bg-gray-200 cursor-not-allowed" readonly value="" />
+    </div>
+    <div class="mb-4">
+      <label for="teacherName" class="block text-gray-700 text-sm font-bold mb-2 flex items-center">
+        <i class="fas fa-user-tie text-green-500 mr-2" aria-hidden="true"></i> 教师姓名: </label>
+      <input type="text" id="teacherName" name="teacherName" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight bg-gray-200 cursor-not-allowed" readonly value="" />
+    </div>
+    <div class="mb-4">
+      <label for="semesterName" class="block text-gray-700 text-sm font-bold mb-2 flex items-center">
+        <i class="fas fa-calendar-alt text-purple-500 mr-2" aria-hidden="true"></i> 学期名称: </label>
+      <input type="text" id="semesterName" name="semesterName" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight bg-gray-200 cursor-not-allowed" readonly value="" />
+    </div>
+    <div class="mb-4">
+      <label for="classof" class="block text-gray-700 text-sm font-bold mb-2 flex items-center">
+        <i class="fas fa-users text-pink-500 mr-2" aria-hidden="true"></i> 班级: </label>
+      <input type="text" id="classof" name="classof" value="" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all" />
+    </div>
+    <div class="mb-4">
+      <label for="startTime" class="block text-gray-700 text-sm font-bold mb-2 flex items-center">
+        <i class="fas fa-play-circle text-blue-500 mr-2" aria-hidden="true"></i> 开始时间: </label>
+      <input type="datetime-local" id="startTime" name="startTime" value="" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all" />
+    </div>
+    <div class="mb-4">
+      <label for="endTime" class="block text-gray-700 text-sm font-bold mb-2 flex items-center">
+        <i class="fas fa-stop-circle text-red-500 mr-2" aria-hidden="true"></i> 截止时间: </label>
+      <input type="datetime-local" id="endTime" name="endTime" value="" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all" />
+    </div>
+    <div class="mb-4">
+      <label for="questionNum" class="block text-gray-700 text-sm font-bold mb-2 flex items-center">
+        <i class="fas fa-list-ol text-orange-500 mr-2" aria-hidden="true"></i> 题目数量: </label>
+      <input type="text" id="questionNum" name="questionNum" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight bg-gray-200 cursor-not-allowed" readonly value="" />
+    </div>
+    <div class="mb-4">
+      <label class="block text-gray-700 text-sm font-bold mb-2 flex items-center">
+        <i class="fas fa-question-circle text-teal-500 mr-2" aria-hidden="true"></i> 题目列表: </label>
+      <button type="button" id="selectQuestionsBtn" class="btn bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all mb-2 flex items-center">
+        <i class="fas fa-tasks mr-1" aria-hidden="true"></i> 从题库选题 </button>
+      <div class="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+        <table id="questionTable" class="min-w-full bg-white">
+          <thead>
+          <tr class="bg-gradient-to-r from-blue-50 to-blue-100 text-gray-600 uppercase text-sm leading-normal">
+            <th class="py-3 px-6 text-left">序号</th>
+            <th class="py-3 px-6 text-left">题目ID</th>
+            <th class="py-3 px-6 text-left">题目内容</th>
+            <th class="py-3 px-6 text-left">分值</th>
+            <th class="py-3 px-6 text-center">操作</th>
+          </tr>
+          </thead>
+          <tbody id="selectedQuestionsBody" class="text-gray-600 text-sm">
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="flex justify-end gap-4 mt-6">
+      <button id="saveBtn" type="button" class="btn bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all flex items-center">
+        <i class="fas fa-save mr-1" aria-hidden="true"></i> 保存 </button>
+      <button id="extendTimeBtn" type="button" class="btn bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-300 transition-all flex items-center">
+        <i class="fas fa-clock mr-1" aria-hidden="true"></i> 延长练习时间 </button>
+      <button id="cancelBtn" type="button" class="btn bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-300 transition-all flex items-center">
+        <i class="fas fa-times-circle mr-1" aria-hidden="true"></i> 取消 </button>
+    </div>
+  </form>
+</div>
+<div id="extendTimeModal" class="modal">
+  <div class="modal-content animate__animated animate__fadeIn">
+    <span class="close-button" data-modal-id="extendTimeModal" aria-label="关闭模态框">&times;</span>
+    <h2 class="text-xl font-bold mb-4 text-gray-800 flex items-center">
+      <i class="fas fa-clock text-green-500 mr-2" aria-hidden="true"></i> 延长练习时间
+    </h2>
+    <form id="extendTimeForm">
+      <div class="mb-4">
+        <label for="newEndTime" class="block text-gray-700 text-sm font-bold mb-2 flex items-center">
+          <i class="fas fa-calendar-alt text-blue-500 mr-2" aria-hidden="true"></i> 新的截止时间: </label>
+        <input type="datetime-local" id="newEndTime" name="newEndTime" value="" required class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500 transition-all" />
+      </div>
+      <input type="hidden" id="extendPracticeId" value="">
+      <div class="flex justify-end gap-4 mt-4">
+        <button id="confirmExtendTimeBtn" type="button" class="btn bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-300 transition-all flex items-center">
+          <i class="fas fa-check mr-1" aria-hidden="true"></i> 确认延长 </button>
+        <button id="cancelExtendTimeBtn" type="button" class="btn bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-300 transition-all flex items-center">
+          <i class="fas fa-times-circle mr-1" aria-hidden="true"></i> 取消 </button>
+      </div>
+    </form>
+  </div>
+</div>
+<div id="questionModal" class="modal">
+  <div class="modal-content animate__animated animate__fadeIn">
+    <span class="close-button" data-modal-id="questionModal" aria-label="关闭模态框">&times;</span>
+    <h3 class="text-xl font-bold mb-4 text-gray-800 flex items-center">
+      <i class="fas fa-question-circle text-teal-500 mr-2" aria-hidden="true"></i> 题库选题（课程：<span id="currentLessonInModal" class="text-blue-600"></span>）
+    </h3>
+    <div id="questionList" class="max-h-60 overflow-y-auto border border-gray-200 rounded-md p-3">
+    </div>
+    <div class="flex justify-end gap-4 mt-4">
+      <button type="button" id="confirmSelectionBtn" class="btn bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-300 transition-all flex items-center">
+        <i class="fas fa-check mr-1" aria-hidden="true"></i> 确认选择 </button>
+      <button type="button" id="closeQuestionModalBtn" class="btn bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-300 transition-all flex items-center">
+        <i class="fas fa-times-circle mr-1" aria-hidden="true"></i> 关闭 </button>
+    </div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script>
+  let practiceId;
+  let currentPracticeStatus;
+  let selectedQuestions = [];
+  let allQuestionsForLesson = [];
+
+  $(document).ready(function () {
+    const urlParams = new URLSearchParams(window.location.search);
+    practiceId = parseInt(urlParams.get('id'));
+    if (isNaN(practiceId)) {
+      alert('无效的练习ID');
+      goBack();
+      return;
+    }
+
+    loadPracticeDetails(practiceId);
+
+    $("#saveBtn").click(function () {
+      if (currentPracticeStatus === 'not_started') {
+        updatePractice();
+      } else {
+        alert('此练习状态为进行中或已结束，不允许修改题目。');
+      }
+    });
+    $("#cancelBtn").click(function () {
+      goBack();
+    });
+
+    $("#extendTimeBtn").click(function () {
+      if (currentPracticeStatus === 'ended') {
+        alert('已结束的练习不能延长截止时间。');
+        return;
+      }
+      $("#extendPracticeId").val(practiceId);
+      const currentEndTime = $("#endTime").val();
+      $("#newEndTime").val(currentEndTime);
+      showModal($("#extendTimeModal")[0]);
+    });
+
+    $("#cancelExtendTimeBtn").click(function () {
+      hideModal($("#extendTimeModal")[0]);
+    });
+
+    $("#selectQuestionsBtn").click(function () {
+      if (currentPracticeStatus !== 'not_started') {
+        alert('此练习状态为进行中或已结束，不允许修改题目。');
+        return;
+      }
+      openQuestionModal();
+    });
+
+    $("#confirmSelectionBtn").click(function () {
+      confirmSelection();
+    });
+
+    $("#closeQuestionModalBtn").click(function () {
+      hideModal($("#questionModal")[0]);
+    });
+
+
+    $(".close-button").click(function () {
+      const modalId = $(this).data('modal-id');
+      const modal = document.getElementById(modalId);
+      if (modal) {
+        hideModal(modal);
+      }
+    });
+
+    $("#confirmExtendTimeBtn").click(function () {
+      confirmExtendTime();
+    });
+
+    window.addEventListener('click', (event) => {
+      if (event.target.classList.contains('modal')) {
+        hideModal(event.target);
+      }
+    });
+  });
+
+  function loadPracticeDetails(practiceId) {
+    $.ajax({
+      url: '/Anotherview/api/teacher/practice/details?id=' + practiceId,
+      type: 'GET',
+      dataType: 'json',
+      success: function (response) {
+        if (response && response.id) {
+          currentPracticeStatus = response.status;
+
+          $("#practiceId").val(response.id);
+          $("#lessonId").val(response.lessonId);
+          $("#teacherId").val(response.teacherId);
+          $("#semesterId").val(response.semesterId);
+
+          $("#practiceTitle").val(response.title);
+          $("#lessonName").val(response.lessonName || '未知课程');
+          $("#teacherName").val(response.teacherName || '未知教师');
+          $("#semesterName").val(response.semesterName || '未知学期');
+          $("#classof").val(response.classof);
+          $("#startTime").val(formatLocalDateTimeForInput(response.startAt));
+          $("#endTime").val(formatLocalDateTimeForInput(response.endAt));
+
+          selectedQuestions = response.questions || [];
+          renderSelectedQuestions();
+
+
+          if (currentPracticeStatus !== 'not_started') {
+            disableModificationFields();
+            $("#status-message").text(`此练习状态为 "${getStatusDisplay(currentPracticeStatus).text}"，只有未开始的练习才能修改。`).show();
+          } else {
+            $("#status-message").hide();
+          }
+
+        } else {
+          alert('未找到练习信息');
+          goBack();
+        }
+      },
+      error: function (xhr, status, error) {
+        console.error("Error fetching practice details:", error);
+        alert('加载练习详细信息出错: ' + (xhr.responseJSON ? xhr.responseJSON.message : xhr.responseText));
+        goBack();
+      }
+    });
+  }
+
+  function disableModificationFields() {
+    $("#practiceTitle").prop('disabled', true).addClass('bg-gray-200 cursor-not-allowed');
+    $("#classof").prop('disabled', true).addClass('bg-gray-200 cursor-not-allowed');
+    $("#startTime").prop('disabled', true).addClass('bg-gray-200 cursor-not-allowed');
+    $("#endTime").prop('disabled', true).addClass('bg-gray-200 cursor-not-allowed');
+    $("#saveBtn").prop('disabled', true).removeClass('bg-blue-500 hover:bg-blue-700').addClass('bg-gray-400 cursor-not-allowed');
+    $("#selectQuestionsBtn").prop('disabled', true).removeClass('bg-blue-500 hover:bg-blue-700').addClass('bg-gray-400 cursor-not-allowed');
+    $("#selectedQuestionsBody button").prop('disabled', true);
+  }
+
+
+  function renderSelectedQuestions() {
+    const questionTableBody = $("#selectedQuestionsBody");
+    questionTableBody.empty();
+    if (selectedQuestions.length === 0) {
+      questionTableBody.append('<tr><td colspan="5" class="text-center text-gray-500 py-4">无题目</td></tr>');
+      $("#questionNum").val(0);
+      return;
+    }
+    selectedQuestions.forEach((question, index) => {
+      const row = `
+		      <tr class="border-b border-gray-200 hover:bg-blue-50">
+		        <td class="py-3 px-6 text-left">${index + 1}</td>
+		        <td class="py-3 px-6 text-left">${question.id}</td>
+		        <td class="py-3 px-6 text-left">${question.content ? question.content.substring(0, 50) + (question.content.length > 50 ? '...' : '') : '无内容'}</td>
+		        <td class="py-3 px-6 text-left">${question.score || 0}</td>
+		        <td class="py-3 px-6 text-center">
+		            ${currentPracticeStatus === 'not_started' ?
+              `<button type="button" onclick="deleteQuestion(${index})" class="btn bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded-lg text-xs transition-all">删除</button>` :
+              `<button type="button" class="btn bg-gray-400 text-white font-bold py-1 px-2 rounded-lg text-xs cursor-not-allowed" disabled>删除</button>`
+      }
+		        </td>
+		      </tr>
+		    `;
+      questionTableBody.append(row);
+    });
+    $("#questionNum").val(selectedQuestions.length);
+  }
+
+  function deleteQuestion(index) {
+    selectedQuestions.splice(index, 1);
+    renderSelectedQuestions();
+  }
+
+
+  function openQuestionModal() {
+    const lessonId = $("#lessonId").val();
+    const lessonName = $("#lessonName").val();
+
+    if (!lessonId) {
+      alert("无法获取课程信息，请刷新页面。");
+      return;
+    }
+
+    $("#currentLessonInModal").text(lessonName || '未知课程');
+    showModal($("#questionModal")[0]);
+
+    $.ajax({
+      url: `/Anotherview/api/teacher/questions?lessonId=${lessonId}`,
+      type: 'GET',
+      dataType: 'json',
+      success: function (questions) {
+        allQuestionsForLesson = questions || [];
+        renderQuestionSelectionList(allQuestionsForLesson);
+      },
+      error: function (xhr, status, error) {
+        console.error("Error fetching questions:", error);
+        $("#questionList").html('<p class="text-red-500 text-center py-4">加载题目失败。</p>');
+      }
+    });
+  }
+
+  function renderQuestionSelectionList(questions) {
+    const container = $("#questionList").empty();
+    if (questions.length === 0) {
+      container.append('<p class="text-center text-gray-500 py-4">该课程下没有题目。</p>');
+      return;
+    }
+    questions.forEach(q => {
+      const isSelected = selectedQuestions.some(sq => sq.id === q.id);
+      container.append(`
+		          <div class="question-item flex items-center py-2 border-b border-gray-100 last:border-b-0">
+		              <label class="flex items-center w-full cursor-pointer text-gray-700 hover:text-blue-600 transition-all">
+		                  <input type="checkbox" value='${JSON.stringify(q)}' ${isSelected ? 'checked' : ''} class="mr-3 form-checkbox text-blue-600 rounded">
+		                  <span class="flex-grow">${q.content ? q.content.substring(0, 80) + (q.content.length > 80 ? '...' : '') : '无内容'}（题型：${q.type || '未知'}，分值：${q.score || 0}）</span>
+		              </label>
+		          </div>
+		      `);
+    });
+  }
+
+
+  function confirmSelection() {
+    const newlySelected = [];
+    $("#questionList input:checked").each(function () {
+      const question = JSON.parse($(this).val());
+      if (!selectedQuestions.some(sq => sq.id === question.id)) {
+        newlySelected.push(question);
+      }
+    });
+
+    const remainingSelected = selectedQuestions.filter(sq => {
+      const sqValue = JSON.stringify(sq);
+      return $(`#questionList input[type='checkbox'][value='${sqValue.replace(/'/g, "&#39;")}']`).prop('checked');
+    });
+
+    selectedQuestions = [...remainingSelected, ...newSelected];
+
+    renderSelectedQuestions();
+    hideModal($("#questionModal")[0]);
+  }
+
+
+  function updatePractice() {
+    const updatedPracticeData = {
+      id: parseInt($("#practiceId").val()),
+      title: $("#practiceTitle").val(),
+      startTime: $("#startTime").val(),
+      endTime: $("#endTime").val(),
+      lessonId: parseInt($("#lessonId").val()),
+      semesterId: parseInt($("#semesterId").val()),
+      teacherId: parseInt($("#teacherId").val()),
+      classof: $("#classof").val(),
+      questionIds: selectedQuestions.map(q => q.id)
+    };
+
+    if (!updatedPracticeData.title) {
+      alert('练习名称不能为空。');
+      return;
+    }
+    if (!updatedPracticeData.startTime || !updatedPracticeData.endTime) {
+      alert('开始和截止时间不能为空。');
+      return;
+    }
+    const startDate = new Date(updatedPracticeData.startTime);
+    const endDate = new Date(updatedPracticeData.endTime);
+
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      alert('无效的日期或时间格式。');
+      return;
+    }
+    if (startDate >= endDate) {
+      alert('截止时间必须晚于开始时间。');
+      return;
+    }
+
+
+    $.ajax({
+      url: '/Anotherview/api/teacher/practice/update',
+      type: 'PUT',
+      contentType: 'application/json',
+      data: JSON.stringify(updatedPracticeData),
+      success: function (response) {
+        alert('练习修改成功！');
+        goBack();
+      },
+      error: function (xhr, status, error) {
+        console.error("Error updating practice:", xhr.responseText);
+        alert('练习修改失败: ' + (xhr.responseJSON ? xhr.responseJSON.message : xhr.responseText));
+      }
+    });
+  }
+
+  function goBack() {
+    window.location.href = 'teacher.html';
+  }
+
+  function confirmExtendTime() {
+    const practiceIdToExtend = $("#extendPracticeId").val();
+    const newEndTimeString = $("#newEndTime").val();
+
+    if (!newEndTimeString) {
+      alert("请选择新的截止时间。");
+      return;
+    }
+    const newEndTimeDate = new Date(newEndTimeString);
+    if (newEndTimeDate <= new Date()) {
+      alert("新的截止时间必须晚于当前时间。");
+      return;
+    }
+
+
+    $.ajax({
+      url: '/Anotherview/api/teacher/practice/extendTime',
+      type: 'PUT',
+      contentType: 'application/json',
+      data: JSON.stringify({
+        practiceId: parseInt(practiceIdToExtend),
+        newEndTime: newEndTimeString
+      }),
+      success: function (response) {
+        alert('练习时间延长成功！');
+        hideModal($("#extendTimeModal")[0]);
+        loadPracticeDetails(practiceId);
+      },
+      error: function (xhr) {
+        alert('延长练习时间失败: ' + (xhr.responseJSON ? xhr.responseJSON.message : xhr.responseText));
+      }
+    });
+  }
+
+  function formatLocalDateTimeForInput(dateTimeStr) {
+    if (!dateTimeStr) return "";
+    try {
+      const date = new Date(dateTimeStr);
+      if (isNaN(date.getTime())) return "";
+
+      const year = date.getFullYear();
+      const month = ('0' + (date.getMonth() + 1)).slice(-2);
+      const day = ('0' + date.getDate()).slice(-2);
+      const hours = ('0' + date.getHours()).slice(-2);
+      const minutes = ('0' + date.getMinutes()).slice(-2);
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    } catch (e) {
+      console.error("Error formatting date for input:", dateTimeStr, e);
+      return "";
+    }
+  }
+
+  function getStatusDisplay(status) {
+    switch (status) {
+      case 'not_started':
+        return {text: '未开始', class: 'text-blue-600'};
+      case 'in_progress':
+        return {text: '进行中', class: 'text-amber-600'};
+      case 'ended':
+        return {text: '已结束', class: 'text-red-600'};
+      default:
+        return {text: status || '未知', class: ''};
+    }
+  }
+
+  function showModal(modalElement) {
+    modalElement.classList.add('is-visible');
+    const modalContent = modalElement.querySelector('.modal-content');
+    modalContent.style.transform = 'scale(0.8)';
+    modalContent.style.opacity = '0';
+    setTimeout(() => {
+      modalContent.classList.add('animate__animated', 'animate__fadeIn');
+    }, 10);
+
+  }
+
+  function hideModal(modalElement) {
+    const modalContent = modalElement.querySelector('.modal-content');
+    modalContent.classList.remove('animate__fadeIn');
+    modalContent.classList.add('animate__fadeOut');
+
+    modalContent.addEventListener('animationend', function handleAnimationEnd() {
+      modalElement.classList.remove('is-visible');
+      modalContent.classList.remove('animate__fadeOut');
+      modalContent.removeEventListener('animationend', handleAnimationEnd);
+      modalContent.style.transform = '';
+      modalContent.style.opacity = '';
+    }, {once: true});
+  }
+
+</script>
+</body>
+</html>
