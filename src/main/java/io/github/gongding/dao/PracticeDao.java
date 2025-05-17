@@ -329,4 +329,71 @@ public class PracticeDao {
             DBUtils.close(conn, pstmt, rs);
         }
     }
+
+    /**
+     * 修改练习的基本信息和关联的题目列表。
+     * 这个方法会更新practice表中的基本字段，删除practice_question表中旧的题目关联，然后插入新的题目关联。
+     *
+     * @param practiceId 要修改的练习的唯一标识符ID
+     * @param title 新的练习标题
+     * @param classof 新的班级信息字符串
+     * @param startTime 新的练习开始时间
+     * @param endTime 新的练习结束时间
+     * @param questionIds 包含新的题目ID的数组
+     * @return 如果练习基本信息更新成功且题目关联操作完成，返回true；
+     * 如果在任何数据库操作中发生 SQLException 或 practice 基本信息更新失败，返回false。
+     */
+    public boolean updatePracticeAndQuestions(int practiceId, String title, String classof, LocalDateTime startTime, LocalDateTime endTime, int[] questionIds) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        boolean success = false;
+
+        try {
+            conn = DBUtils.getConnection();
+
+            //用于更新practice表中指定练习的基本信息字段
+            String updatePracticeSql = "UPDATE practice SET title = ?, classof = ?, start_time = ?, end_time = ?, question_num = ? WHERE practice_id = ?";
+            pstmt = conn.prepareStatement(updatePracticeSql);
+            pstmt.setString(1, title);
+            pstmt.setString(2, classof);
+            pstmt.setTimestamp(3, Timestamp.valueOf(startTime));
+            pstmt.setTimestamp(4, Timestamp.valueOf(endTime));
+            pstmt.setInt(5, questionIds != null ? questionIds.length : 0);
+            pstmt.setInt(6, practiceId);
+            int affectedRows = pstmt.executeUpdate();
+
+            if (affectedRows > 0) {
+                //用于删除practice_question表中与当前练习ID关联的所有题目记录
+                String deleteQuestionsSql = "DELETE FROM practice_question WHERE practice_id = ?";
+                PreparedStatement deletePstmt = conn.prepareStatement(deleteQuestionsSql);
+                deletePstmt.setInt(1, practiceId);
+                deletePstmt.executeUpdate();
+                DBUtils.close(null, deletePstmt);
+
+                //如果提供了新的题目ID数组
+                if (questionIds != null && questionIds.length > 0) {
+                    //用于向practice_question表中批量插入新的题目关联记录
+                    String insertQuestionsSql = "INSERT INTO practice_question (practice_id, question_id, seq_no) VALUES (?, ?, ?)";
+                    PreparedStatement insertPstmt = conn.prepareStatement(insertQuestionsSql);
+                    for (int i = 0; i < questionIds.length; i++) {
+                        insertPstmt.setInt(1, practiceId);
+                        insertPstmt.setInt(2, questionIds[i]);
+                        insertPstmt.setInt(3, i + 1);
+                        insertPstmt.addBatch();
+                    }
+                    insertPstmt.executeBatch();
+                    DBUtils.close(null, insertPstmt);
+                }
+                success = true;
+
+                //根据新的开始和结束时间重新计算并更新练习的状态，确保状态字段是最新的
+                updatePracticeStatus(practiceId);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            DBUtils.close(conn, pstmt);
+        }
+        return success;
+    }
 }
