@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>练习列表</title>
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+<div id="header">
+    <button onclick="window.location.href='/Anotherview/html/student/student.html'" class="btn-view">← 返回</button>
+    <h2 id="lessonTitle"></h2>
+</div>
+
+<table class="practice-table">
+    <thead>
+    <tr>
+        <th>#</th>
+        <th>练习名称</th>
+        <th>题数</th>
+        <th>截止时间</th>
+        <th>完成进度</th> <th>分数</th>
+        <th>状态</th>
+        <th>操作</th>
+    </tr>
+    </thead>
+    <tbody id="practiceList"></tbody>
+</table>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const lessonId = urlParams.get('lesson_id');
+
+    $(function () {
+        $.get(`/Anotherview/api/student/lessonInfo?lesson_id=${lessonId}`, function (lesson) {
+            $('#lessonTitle').text(lesson.title);
+        }).fail(function() {
+            $('#lessonTitle').text('课程信息加载失败');
+        });
+
+        $.get(`/Anotherview/api/student/practices?lesson_id=${lessonId}`, function (practices) {
+            const tbody = $('#practiceList');
+            tbody.empty();
+
+            if (practices.length === 0) {
+                tbody.append('<tr><td colspan="8" style="text-align: center;">没有找到练习。</td></tr>');
+                return;
+            }
+
+            practices.forEach((practice, index) => {
+                const status = practice.status;
+                const statusText = status === 'not_started' ? "未开始" : status === 'ended' ? "已截止" : "进行中";
+                const statusClass = status === 'not_started' ? "status-notstarted" : status === 'ended' ? "status-ended" : "status-inprogress";
+
+                let completionDisplay = '-';
+                if (status !== 'not_started' && practice.completedQuestions !== undefined && practice.questionNum !== undefined) {
+                    completionDisplay = `${practice.completedQuestions}/${practice.questionNum}`;
+                }
+
+                let scoreDisplay = '-';
+                if (status === 'ended' && practice.obtainedScore !== null && practice.totalScore !== null) {
+                    scoreDisplay = `${practice.obtainedScore.toFixed(2)}/${practice.totalScore.toFixed(2)}`;
+                }
+
+
+                let buttonHtml = '';
+                if (status !== 'not_started') {
+                    buttonHtml = `
+                        <button class="${status === 'ended' ? 'btn-view' : 'btn-submit'}"
+                                onclick="handlePracticeClick('${practice.id}', '${status}')">
+                            ${status === 'ended' ? '查看' : '提交'}
+                        </button>
+                    `;
+                } else {
+                    buttonHtml = '-';
+                }
+
+                const endAt = practice.endAt ? new Date(practice.endAt).toLocaleString() : '-';
+
+
+                const row = `
+        <tr>
+            <td data-label="#">${index + 1}</td>
+            <td data-label="练习名称">${escapeHtml(practice.title)}</td>
+            <td data-label="题数">${practice.questionNum}</td>
+            <td data-label="截止时间">${endAt}</td>
+            <td data-label="完成进度">${completionDisplay}</td>
+            <td data-label="分数">${scoreDisplay}</td>
+            <td data-label="状态" class="${statusClass}">${statusText}</td>
+            <td data-label="操作">${buttonHtml}</td>
+        </tr>`;
+                tbody.append(row);
+            });
+        }).fail(function(xhr, status, error) {
+            console.error("Error loading practices:", error);
+            $('#practiceList').html('<tr><td colspan="8" style="text-align: center; color: red;">加载练习列表失败。</td></tr>');
+        });
+    });
+
+    function handlePracticeClick(practiceId, status) {
+        const mode = status === 'ended' ? 'view' : 'submit';
+        window.location.href = `student-list-question.html?practice_id=${practiceId}&lesson_id=${lessonId}&mode=${mode}`;
+    }
+
+    function escapeHtml(str) {
+        if (str === null || str === undefined) return '';
+        return str.toString().replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+</script>
+</body>
+</html>
