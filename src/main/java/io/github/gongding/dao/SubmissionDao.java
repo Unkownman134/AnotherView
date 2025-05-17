@@ -138,4 +138,45 @@ public class SubmissionDao {
         }
         return submissionId;
     }
+
+    /**
+     * 计算学生在某个练习中已完成的题目数量
+     * @param studentId 学生ID
+     * @param practiceId 练习ID
+     * @return 已完成题目数量
+     */
+    public int getStudentCompletedQuestionCount(int studentId, int practiceId) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        int completedCount = 0;
+
+        try {
+            conn = DBUtils.getConnection();
+            String sql = "SELECT COUNT(sa.question_id) AS completed_count " +
+                    "FROM submission s " +
+                    "JOIN submission_answer sa ON s.submission_id = sa.submission_id " +
+                    "WHERE s.student_id = ? AND s.practice_id = ? " +
+                    "AND s.submitted_at = (SELECT MAX(submitted_at) FROM submission WHERE student_id = ? AND practice_id = ?) " +
+                    "AND (sa.student_answer IS NOT NULL AND sa.student_answer != '')";
+
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, studentId);
+            pstmt.setInt(2, practiceId);
+            pstmt.setInt(3, studentId);
+            pstmt.setInt(4, practiceId);
+
+            rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                completedCount = rs.getInt("completed_count");
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            DBUtils.close(conn, pstmt, rs);
+        }
+        return completedCount;
+    }
 }
