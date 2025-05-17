@@ -396,4 +396,92 @@ public class PracticeDao {
         }
         return success;
     }
+
+    /**
+     * 从现有练习复用创建新的练习记录。
+     * 这个方法主要复制原有练习的题目，并设置新的基本信息。
+     * @param teacherId 创建新练习的教师ID
+     * @param lessonId 新练习所属的课程ID
+     * @param semesterId 新练习所属的学期ID
+     * @param newTitle 新练习的标题
+     * @param classIds 新练习关联的班级ID数组
+     * @param newStartTime 新练习的开始时间
+     * @param newEndTime 新练习的结束时间
+     * @param questionIds 新练习包含的题目ID数组
+     * @return 新创建练习的ID，如果创建失败则返回-1。
+     */
+    public int createPracticeFromReuse(int teacherId, int lessonId, int semesterId, String newTitle, int[] classIds, LocalDateTime newStartTime, LocalDateTime newEndTime, int[] questionIds) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        int newPracticeId = -1;
+
+        try {
+            conn = DBUtils.getConnection();
+
+            //新练习记录的SQL语句
+            String insertPracticeSql = "INSERT INTO practice (lesson_id, teacher_id, semester_id, title, classof, start_time, end_time, question_num, status, created_at) " + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            pstmt = conn.prepareStatement(insertPracticeSql, Statement.RETURN_GENERATED_KEYS);
+
+            pstmt.setInt(1, lessonId);
+            pstmt.setInt(2, teacherId);
+            pstmt.setInt(3, semesterId);
+            pstmt.setString(4, newTitle);
+            pstmt.setString(5, "");
+            pstmt.setTimestamp(6, Timestamp.valueOf(newStartTime));
+            pstmt.setTimestamp(7, Timestamp.valueOf(newEndTime));
+            pstmt.setInt(8, questionIds != null ? questionIds.length : 0);
+            String calculatedStatus = PracticeStatusUtils.calculateStatus(newStartTime, newEndTime);
+            pstmt.setString(9, calculatedStatus);
+            pstmt.setTimestamp(10, Timestamp.valueOf(LocalDateTime.now()));
+
+            int affectedRows = pstmt.executeUpdate();
+
+            if (affectedRows > 0) {
+                rs = pstmt.getGeneratedKeys();
+                if (rs.next()) {
+                    //获取新创建练习的ID
+                    newPracticeId = rs.getInt(1);
+
+                    if (questionIds != null && questionIds.length > 0) {
+                        //用于向practice_question表批量插入新练习与题目的关联记录
+                        String insertQuestionsSql = "INSERT INTO practice_question (practice_id, question_id, seq_no) VALUES (?, ?, ?)";
+                        PreparedStatement questionPstmt = conn.prepareStatement(insertQuestionsSql);
+                        for (int i = 0; i < questionIds.length; i++) {
+                            questionPstmt.setInt(1, newPracticeId);
+                            questionPstmt.setInt(2, questionIds[i]);
+                            questionPstmt.setInt(3, i + 1);
+                            questionPstmt.addBatch();
+                        }
+                        questionPstmt.executeBatch();
+                        DBUtils.close(null, questionPstmt);
+                    }
+
+                    if (classIds != null && classIds.length > 0) {
+                        //用于向practice_class表批量插入新练习与班级的关联记录
+                        String insertClassesSql = "INSERT INTO practice_class (practice_id, class_id) VALUES (?, ?)";
+                        PreparedStatement classPstmt = conn.prepareStatement(insertClassesSql);
+                        for (int classId : classIds) {
+                            classPstmt.setInt(1, newPracticeId);
+                            classPstmt.setInt(2, classId);
+                            classPstmt.addBatch();
+                        }
+                        classPstmt.executeBatch();
+                        DBUtils.close(null, classPstmt);
+                    }
+
+                } else {
+                    newPracticeId = -1;
+                }
+            } else {
+                newPracticeId = -1;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            newPracticeId = -1;
+        } finally {
+            DBUtils.close(conn, pstmt, rs);
+        }
+        return newPracticeId;
+    }
 }
