@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>答题界面</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+<div id="header">
+    <button onclick="goBack()" class="btn-view">← 返回</button>
+    <h2 id="practiceTitle"></h2>
+    <span>截止时间: <span id="endTime"></span></span>
+</div>
+
+<form id="answerForm">
+    <div id="questionsContainer">
+    </div>
+    <button type="button" class="submit-btn" onclick="submitAnswers()">提交练习</button>
+</form>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const practiceId = urlParams.get('practice_id');
+    const lessonId = urlParams.get('lesson_id');
+    const mode = urlParams.get('mode');
+
+    console.log(`Loaded student-list-question.html`);
+    console.log(`practice_id: ${practiceId}`);
+    console.log(`lesson_id: ${lessonId}`);
+    console.log(`mode: ${mode}`);
+
+
+    let isReadOnly = mode === 'view';
+    let globalQuestions = [];
+
+    $(function () {
+        $.get(`/Anotherview/api/student/practiceDetails?practice_id=${practiceId}`, function (practice) {
+            $('#practiceTitle').text(practice.title);
+            const endTime = practice.endAt ? new Date(practice.endAt).toLocaleString() : '-';
+            $('#endTime').text(endTime);
+
+
+            if (isReadOnly) {
+                $('#answerForm').addClass('readonly-mode');
+                console.log(`Applied readonly-mode.`);
+            }
+
+            loadQuestions(practiceId);
+
+
+        }).fail(function(xhr, status, error) {
+            console.error("Error loading practice details:", error);
+            $('#practiceTitle').text('练习信息加载失败');
+            $('#endTime').text('-');
+            $('#questionsContainer').html('<p style="color: red;">无法加载练习详情和题目。</p>');
+        });
+    });
+
+    function loadQuestions(practiceId) {
+        $.get(`/Anotherview/api/student/questions?practice_id=${practiceId}`, function (questions) {
+            globalQuestions = questions;
+            renderQuestions(questions);
+            loadPreviousAnswers(practiceId);
+        }).fail(function(xhr, status, error) {
+            console.error("Error loading questions:", error);
+            $('#questionsContainer').html('<p style="color: red;">加载题目失败。</p>');
+        });
+    }
+
+    function renderQuestions(questions) {
+        const container = $('#questionsContainer');
+        container.empty();
+
+        if (questions.length === 0) {
+            container.append('<p>该练习没有题目。</p>');
+            return;
+        }
+
+        questions.forEach((q, index) => {
+            let optionsHtml = '';
+            let inputHtml = '';
+            const questionIndex = index + 1;
+
+            if (q.type === 'single_choice' || q.type === 'multiple_choice') {
+                optionsHtml = '<ul class="options-list">';
+                if (Array.isArray(q.options)) {
+                    q.options.forEach((option, optIndex) => {
+                        const inputType = q.type === 'single_choice' ? 'radio' : 'checkbox';
+                        const inputName = `q${q.id}`;
+                        const optionId = `${inputName}-opt${optIndex}`;
+                        const disabledAttr = isReadOnly ? 'disabled' : '';
+                        const optionLabel = String.fromCharCode(65 + optIndex);
+
+                        optionsHtml += `
+                            <li>
+                                <input type="${inputType}" id="${optionId}" name="${inputName}" value="${escapeHtml(option)}" ${disabledAttr}>
+                                <label for="${optionId}">
+                                    <span class="option-label">${optionLabel}.</span>
+                                    ${escapeHtml(option)}
+                                </label>
+                            </li>`;
+                    });
+                } else {
+                    console.warn(`Question ${q.id} has no options or invalid options format.`);
+                }
+
+                optionsHtml += '</ul>';
+            } else if (q.type === 'fill_blank' || q.type === 'essay') {
+                if (!isReadOnly) {
+                    const disabledAttr = isReadOnly ? 'disabled' : '';
+                    inputHtml = `
+                         <div class="text-answer-input">
+                             <textarea name="q${q.id}" rows="${q.type === 'essay' ? '8' : '3'}" cols="50" placeholder="填写答案" ${disabledAttr}></textarea>
+                         </div>
+                     `;
+                } else {
+                    inputHtml = `<div class="text-answer-input" style="display: none;"></div>`;
+                }
+            }
+
+            let correctHtml = '';
+            if (isReadOnly) {
+                console.log(`Rendering Question ${q.id}: isReadOnly = ${isReadOnly}, correctAnswer = "${q.correctAnswer}"`);
+                if (q.correctAnswer && q.correctAnswer.trim() !== '') {
+                    let formattedCorrectAnswer = escapeHtml(q.correctAnswer);
+                    if ((q.type === 'single_choice' || q.type === 'multiple_choice') && Array.isArray(q.options)) {
+                        const correctValues = q.correctAnswer.split(',').map(s => s.trim()).filter(s => s !== '');
+                        const correctLabels = correctValues.map(val => {
+                            const optIndex = q.options.findIndex(opt => opt.trim().toLowerCase() === val.toLowerCase());
+                            return optIndex !== -1 ? String.fromCharCode(65 + optIndex) : val;
+                        }).join(',');
+                        formattedCorrectAnswer = correctLabels;
+                    }
+                    correctHtml = `<div class="correct-answer"><strong>正确答案：</strong>${formattedCorrectAnswer}</div>`;
+                } else {
+                    console.log(`Question ${q.id}: Correct answer is null, empty, or whitespace.`);
+                }
+            }
+
+            const questionHtml = `
+                <div class="question-item" data-qid="${q.id}">
+                    <h3>${questionIndex}. ${escapeHtml(q.content)} (${q.type}, ${q.score}分)</h3>
+                     <div class="question-content"></div> ${optionsHtml}
+                    ${inputHtml} ${correctHtml}
+                    <div class="previous-answer" style="display: none;"><strong>你的答案：</strong> <span class="answer-text"></span></div>
+                     <div class="feedback" style="display: none;"><strong>评语：</strong> <span class="feedback-text"></span></div>
+                     <div class="grade" style="display: none;"><strong>得分：</strong> <span class="grade-text"></span></div>
+                </div>`;
+            container.append(questionHtml);
+        });
+    }
+
+    function loadPreviousAnswers(practiceId) {
+        $.get(`/Anotherview/api/student/previous-answers?practice_id=${practiceId}`, function (submission) {
+            console.log("Previous answers loaded:", submission);
+            if (submission && Object.keys(submission).length > 0 && submission.answers && Array.isArray(submission.answers)) {
+                submission.answers.forEach(subAnswer => {
+                    const questionItem = $(`div.question-item[data-qid="${subAnswer.questionId}"]`);
+                    if (questionItem.length > 0) {
+                        const previousAnswerDiv = questionItem.find('.previous-answer');
+                        const studentAnswer = subAnswer.studentAnswer || '未作答';
+
+                        let displayedAnswer = escapeHtml(studentAnswer);
+                        const question = globalQuestions.find(q => q.id === subAnswer.questionId);
+                        if (question && (question.type === 'single_choice' || question.type === 'multiple_choice') && Array.isArray(question.options)) {
+                            const studentValues = studentAnswer.split(',').map(s => s.trim()).filter(s => s !== '');
+                            const studentLabels = studentValues.map(val => {
+                                const optIndex = question.options.findIndex(opt => opt.trim().toLowerCase() === val.toLowerCase());
+                                return optIndex !== -1 ? String.fromCharCode(65 + optIndex) : val;
+                            }).join(',');
+                            displayedAnswer = studentLabels || '未作答';
+
+                            if (isReadOnly) {
+                                studentValues.forEach(val => {
+                                    questionItem.find(`input[type="radio"][value="${escapeHtml(val)}"], input[type="checkbox"][value="${escapeHtml(val)}"]`).prop('checked', true);
+                                });
+                            }
+
+                        } else {
+                            if (!isReadOnly) {
+                                questionItem.find(`textarea[name="q${question.id}"]`).val(studentAnswer);
+                            }
+                        }
+
+                        previousAnswerDiv.find('.answer-text').text(displayedAnswer);
+                        previousAnswerDiv.show();
+
+
+                        if (isReadOnly) {
+                            if (subAnswer.grade !== null) {
+                                const gradeDiv = questionItem.find('.grade');
+                                gradeDiv.find('.grade-text').text(subAnswer.grade);
+                                gradeDiv.show();
+                            }
+                            if (subAnswer.feedback !== null && subAnswer.feedback.trim() !== '') {
+                                const feedbackDiv = questionItem.find('.feedback');
+                                feedbackDiv.find('.feedback-text').text(escapeHtml(subAnswer.feedback));
+                                feedbackDiv.show();
+                            }
+                            if (subAnswer.isCorrect !== null) {
+                                if (subAnswer.isCorrect) {
+                                    previousAnswerDiv.css('background-color', '#dff0d8').css('border-color', '#d6e9c6').css('color', '#3c763d');
+                                } else {
+                                    previousAnswerDiv.css('background-color', '#fcf8e3').css('border-color', '#faebcc').css('color', '#8a6d3b');
+                                }
+                            }
+                        }
+                    }
+                });
+            } else {
+                console.log("No previous submission found for this practice and student.");
+                if (!isReadOnly) {
+                    $('#answerForm input, #answerForm textarea').prop('disabled', false);
+                }
+            }
+        }).fail(function(xhr, status, error) {
+            console.error("Error loading previous answers:", error);
+            if (!isReadOnly) {
+                $('#answerForm input, #answerForm textarea').prop('disabled', false);
+            }
+        });
+    }
+
+
+    function submitAnswers() {
+        if (isReadOnly) {
+            alert('当前练习已截止，不能提交答案。');
+            return;
+        }
+
+        const payload = {practiceId: Number(practiceId), answers: []};
+        globalQuestions.forEach(q => {
+            let val = '';
+            if (q.type === 'multiple_choice') {
+                val = $(`input[name="q${q.id}"]:checked`).map((i, e) => $(e).val()).get().join(',');
+            } else if (q.type === 'single_choice') {
+                val = $(`input[name="q${q.id}"]:checked`).val() || '';
+            } else {
+                val = $(`div.question-item[data-qid="${q.id}"] textarea[name="q${q.id}"]`).val() || '';
+            }
+            payload.answers.push({questionId: q.id, answer: val.trim()});
+        });
+
+        console.log("Submitting answers payload:", payload);
+
+
+        $.ajax({
+            url: '/Anotherview/api/student/submit',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(payload),
+            success() {
+                alert('提交成功🎉');
+                if (lessonId) window.location.href = `/Anotherview/html/student/student-list-practice.html?lesson_id=${lessonId}`;
+                else history.back();
+            },
+            error(xhr) {
+                console.error("Submission failed:", xhr);
+                alert('提交失败: ' + (xhr.responseJSON?.message || xhr.statusText || '未知错误'));
+            }
+        });
+    }
+
+    function goBack() {
+        if (lessonId) {
+            window.location.href = `/Anotherview/html/student/student-list-practice.html?lesson_id=${lessonId}`;
+        } else {
+            history.back();
+        }
+    }
+
+    function escapeHtml(str) {
+        if (str === null || str === undefined) return '';
+        return str.toString().replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+</script>
+</body>
+</html>
