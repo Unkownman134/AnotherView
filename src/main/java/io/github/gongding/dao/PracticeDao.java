@@ -484,4 +484,35 @@ public class PracticeDao {
         }
         return newPracticeId;
     }
+
+    /**
+     * 根据练习的唯一标识符ID查询单个练习的详细信息。
+     * 这个方法执行数据库读取操作，返回一个PracticeEntity对象。
+     *
+     * @param practiceId 要查询的练习的唯一标识符ID。
+     * @return 如果找到匹配的练习，返回一个PracticeEntity对象；如果找不到或发生SQL异常，返回null。
+     */
+    public PracticeEntity getPracticeById(int practiceId) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        PracticeEntity practice = null;
+
+        try {
+            conn = DBUtils.getConnection();
+            String sql = "SELECT * FROM practice WHERE practice_id = ?";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, practiceId);
+            rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                practice = buildPracticeEntity(rs);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            DBUtils.close(conn, pstmt, rs);
+        }
+        return practice;
+    }
 }
