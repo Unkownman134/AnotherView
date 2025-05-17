@@ -263,4 +263,70 @@ public class PracticeDao {
         practice.setSemesterId(rs.getInt("semester_id"));
         return practice;
     }
+
+    /**
+     * 延长练习的截止时间
+     * 这个方法执行更新操作
+     * @param practiceId 练习ID
+     * @param newEndTime 新的截止时间
+     */
+    public void extendPracticeTime(int practiceId, LocalDateTime newEndTime) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        try {
+            conn = DBUtils.getConnection();
+            String sql = "UPDATE practice SET end_time = ? WHERE practice_id = ?";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setTimestamp(1, Timestamp.valueOf(newEndTime));
+            pstmt.setInt(2, practiceId);
+            pstmt.executeUpdate();
+
+            updatePracticeStatus(practiceId);
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            DBUtils.close(conn, pstmt);
+        }
+    }
+
+    /**
+     * 根据练习ID更新练习的状态
+     * 这个方法执行读取和可能的更新操作
+     * 它首先获取练习的开始时间和结束时间，然后计算新的状态，如果状态发生变化则更新数据库
+     * @param practiceId 练习ID
+     */
+    public void updatePracticeStatus(int practiceId) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        try {
+            conn = DBUtils.getConnection();
+            String selectSql = "SELECT start_time, end_time, status FROM practice WHERE practice_id = ?";
+            pstmt = conn.prepareStatement(selectSql);
+            pstmt.setInt(1, practiceId);
+            rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                LocalDateTime startTime = rs.getTimestamp("start_time").toLocalDateTime();
+                LocalDateTime endTime = rs.getTimestamp("end_time").toLocalDateTime();
+                String currentStatus = rs.getString("status");
+
+                String newStatus = PracticeStatusUtils.calculateStatus(startTime, endTime);
+
+                if (!newStatus.equals(currentStatus)) {
+                    String updateSql = "UPDATE practice SET status = ? WHERE practice_id = ?";
+                    PreparedStatement updatePstmt = conn.prepareStatement(updateSql);
+                    updatePstmt.setString(1, newStatus);
+                    updatePstmt.setInt(2, practiceId);
+                    updatePstmt.executeUpdate();
+                    DBUtils.close(null, updatePstmt);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            DBUtils.close(conn, pstmt, rs);
+        }
+    }
 }
