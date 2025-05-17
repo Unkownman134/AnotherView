@@ -221,4 +221,39 @@ public class SubmissionDao {
         }
         return obtainedScore;
     }
+
+    /**
+     * 计算某个练习的总分数
+     * @param practiceId 练习ID
+     * @return 练习的总分数
+     */
+    public double getPracticeTotalScore(int practiceId) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        double totalScore = 0.0;
+
+        try {
+            conn = DBUtils.getConnection();
+            String sql = "SELECT SUM(q.score) AS total_score " +
+                    "FROM practice_question pq " +
+                    "JOIN question q ON pq.question_id = q.question_id " +
+                    "WHERE pq.practice_id = ?";
+
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, practiceId);
+
+            rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                totalScore = rs.getDouble("total_score");
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            DBUtils.close(conn, pstmt, rs);
+        }
+        return totalScore;
+    }
 }
