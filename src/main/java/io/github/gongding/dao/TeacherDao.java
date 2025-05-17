@@ -28,21 +28,7 @@ public class TeacherDao {
 
             rs = pstmt.executeQuery();
             if (rs.next()) {
-                teacher = new TeacherEntity();
-
-                Calendar shanghaiCalendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Shanghai"));
-
-                teacher.setId(rs.getInt("teacher_id"));
-                teacher.setName(rs.getString("name"));
-                teacher.setEmail(rs.getString("email"));
-                teacher.setPasswordSalt(rs.getString("password_salt"));
-                teacher.setPasswordHash(rs.getString("password_hash"));
-
-                Timestamp lastLoginTs = rs.getTimestamp("last_login", shanghaiCalendar);
-                Timestamp createdAtTs = rs.getTimestamp("created_at", shanghaiCalendar);
-
-                teacher.setLastLogin(lastLoginTs != null ? lastLoginTs.toLocalDateTime() : null);
-                teacher.setCreatedAt(createdAtTs != null ? createdAtTs.toLocalDateTime() : null);
+                teacher = buildTeacherEntity(rs);
             }
         } catch (SQLException e) {
             e.printStackTrace();
