@@ -43,5 +43,39 @@ public class SemesterDao {
         }
         return semesters;
     }
+
+    /**
+     * 根据学期ID获取学期
+     * @param id 学期ID
+     * @return 学期实体
+     */
+    public SemesterEntity getSemesterById(int id) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        SemesterEntity semester = null;
+
+        try {
+            conn = DBUtils.getConnection();
+            String sql = "SELECT * FROM semester WHERE semester_id = ?";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, id);
+            rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                semester = new SemesterEntity();
+                semester.setId(rs.getInt("semester_id"));
+                semester.setName(rs.getString("name"));
+                semester.setStartDate(rs.getDate("start_date").toLocalDate());
+                semester.setEndDate(rs.getDate("end_date").toLocalDate());
+                semester.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            DBUtils.close(conn, pstmt, rs);
+        }
+        return semester;
+    }
 }
 
