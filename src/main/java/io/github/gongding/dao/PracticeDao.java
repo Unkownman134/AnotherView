@@ -515,4 +515,35 @@ public class PracticeDao {
         }
         return practice;
     }
+
+    /**
+     * 根据课程ID获取练习列表
+     * @param lessonId 课程ID
+     * @return 练习列表
+     */
+    public List<PracticeEntity> getPracticesByLessonId(int lessonId) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        List<PracticeEntity> practices = new ArrayList<>();
+
+        try {
+            conn = DBUtils.getConnection();
+            String sql = "SELECT * FROM practice WHERE lesson_id = ?";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, lessonId);
+
+            rs = pstmt.executeQuery();
+            while (rs.next()) {
+                PracticeEntity practice = buildPracticeEntity(rs);
+                updatePracticeStatus(practice.getId());
+                practices.add(practice);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            DBUtils.close(conn, pstmt, rs);
+        }
+        return practices;
+    }
 }
