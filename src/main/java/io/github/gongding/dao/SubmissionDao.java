@@ -256,4 +256,63 @@ public class SubmissionDao {
         }
         return totalScore;
     }
+
+    /**
+     * 获取学生对特定练习的最近一次提交记录及答案
+     * @param studentId 学生ID
+     * @param practiceId 练习ID
+     * @return 最近一次提交的Map表示，如果不存在则返回null
+     */
+    public Map<String, Object> getLatestSubmission(int studentId, int practiceId) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        Map<String, Object> submission = null;
+
+        try {
+            conn = DBUtils.getConnection();
+
+            String latestSubmissionSql = "SELECT submission_id FROM submission WHERE student_id = ? AND practice_id = ? ORDER BY submitted_at DESC LIMIT 1";
+            pstmt = conn.prepareStatement(latestSubmissionSql);
+            pstmt.setInt(1, studentId);
+            pstmt.setInt(2, practiceId);
+            rs = pstmt.executeQuery();
+
+            int submissionId = -1;
+            if (rs.next()) {
+                submissionId = rs.getInt("submission_id");
+            }
+            DBUtils.close(null, pstmt, rs);
+            pstmt = null;
+            rs = null;
+
+            if (submissionId != -1) {
+                String answersSql = "SELECT question_id, student_answer, is_correct, grade, feedback FROM submission_answer WHERE submission_id = ?";
+                pstmt = conn.prepareStatement(answersSql);
+                pstmt.setInt(1, submissionId);
+                rs = pstmt.executeQuery();
+
+                List<Map<String, Object>> answers = new ArrayList<>();
+                while (rs.next()) {
+                    Map<String, Object> answer = new HashMap<>();
+                    answer.put("questionId", rs.getInt("question_id"));
+                    answer.put("studentAnswer", rs.getString("student_answer"));
+                    answer.put("isCorrect", rs.getObject("is_correct"));
+                    answer.put("grade", rs.getObject("grade"));
+                    answer.put("feedback", rs.getString("feedback"));
+                    answers.add(answer);
+                }
+
+                submission = new HashMap<>();
+                submission.put("submissionId", submissionId);
+                submission.put("answers", answers);
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            DBUtils.close(conn, pstmt, rs);
+        }
+        return submission;
+    }
 }
