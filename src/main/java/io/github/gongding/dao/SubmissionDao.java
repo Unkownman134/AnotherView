@@ -179,4 +179,46 @@ public class SubmissionDao {
         }
         return completedCount;
     }
+
+    /**
+     * 计算学生在某个练习中获得的总分数
+     * @param studentId 学生ID
+     * @param practiceId 练习ID
+     * @return 学生在该练习中获得的总分数
+     */
+    public double getStudentObtainedScore(int studentId, int practiceId) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        double obtainedScore = 0.0;
+
+        try {
+            conn = DBUtils.getConnection();
+            String sql = "SELECT SUM(q.score) AS obtained_score " +
+                    "FROM submission s " +
+                    "JOIN submission_answer sa ON s.submission_id = sa.submission_id " +
+                    "JOIN question q ON sa.question_id = q.question_id " +
+                    "WHERE s.student_id = ? AND s.practice_id = ? " +
+                    "AND s.submitted_at = (SELECT MAX(submitted_at) FROM submission WHERE student_id = ? AND practice_id = ?) " + // Latest submission
+                    "AND (sa.is_correct = TRUE OR sa.grade IS NOT NULL)"; // Include auto-correct and manually graded
+
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, studentId);
+            pstmt.setInt(2, practiceId);
+            pstmt.setInt(3, studentId);
+            pstmt.setInt(4, practiceId);
+
+            rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                obtainedScore = rs.getDouble("obtained_score");
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            DBUtils.close(conn, pstmt, rs);
+        }
+        return obtainedScore;
+    }
 }
