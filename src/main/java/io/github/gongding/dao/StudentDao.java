@@ -1,10 +1,13 @@
 package io.github.gongding.dao;
 
+import io.github.gongding.entity.LessonEntity;
 import io.github.gongding.entity.StudentEntity;
 import io.github.gongding.util.DBUtils;
 
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 import java.util.TimeZone;
 
 public class StudentDao {
@@ -106,5 +109,42 @@ public class StudentDao {
             DBUtils.close(conn, pstmt);
         }
         return false;
+    }
+
+    /**
+     * 根据学生的学号查询该学生参与的所有课程列表。
+     *
+     * @param studentNumber 要查询课程列表的学生的学号。
+     * @return 一个LessonEntity对象的列表，包含该学生参与的所有课程。如果学生没有关联的课程或发生SQL异常，返回空列表。
+     */
+    public List<LessonEntity> getStudentLessons(String studentNumber) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        List<LessonEntity> lessons = new ArrayList<>();
+
+        try {
+            conn = DBUtils.getConnection();
+            String sql = "SELECT l.lesson_id AS id, l.title " +
+                    "FROM lesson l " +
+                    "JOIN lesson_student ls ON l.lesson_id = ls.lesson_id " +
+                    "JOIN student s ON ls.student_id = s.student_id " +
+                    "WHERE s.student_number = ?";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, studentNumber);
+            rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                LessonEntity lesson = new LessonEntity();
+                lesson.setId(rs.getInt("id"));
+                lesson.setTitle(rs.getString("title"));
+                lessons.add(lesson);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            DBUtils.close(conn, pstmt, rs);
+        }
+        return lessons;
     }
 }
