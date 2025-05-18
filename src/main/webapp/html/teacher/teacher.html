@@ -13,6 +13,7 @@
         body {
             font-family: 'Nunito', sans-serif;
             transition: background-color 0.3s ease;
+            overflow-x: hidden;
         }
 
         .transition-all {
@@ -115,6 +116,13 @@
 
         tbody tr {
             transition: transform 0.2s ease, box-shadow 0.2s ease;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        tbody tr.fade-in {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         tbody tr:hover {
@@ -125,6 +133,7 @@
         .btn {
             position: relative;
             overflow: hidden;
+            z-index: 1;
         }
 
         .btn::after {
@@ -139,6 +148,7 @@
             border-radius: 100%;
             transform: scale(1, 1) translate(-50%, -50%);
             transform-origin: 50% 50%;
+            z-index: -1;
         }
 
         .btn:focus:not(:active)::after {
@@ -384,7 +394,7 @@
 
         #semester-select {
             appearance: none;
-            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.362%22%20height%3D%22292.362%22%20viewBox%3D%220%200%20292.362%20292.362%22%3E%3Cpath%20fill%3D%22%230074D9%22%20d%3D%22M287.9.953l-13.985-13.986c-3.773-3.772-9.88-3.772-13.653%200L146.18%20182.486%2032.004%2068.309c-3.772-3.772-9.88-3.772-13.652%200L4.369%2082.295c-3.772%203.772-3.772%209.88%200%2013.653l139.86%20139.86c3.772%203.772%209.88%203.772%2013.653%200l139.86-139.86c3.772-3.773%203.772-9.881%200-13.653z%22%2F%3E%3C%2Fsvg%3E');
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.362%22%20height%2D%22292.362%22%20viewBox%3D%220%200%20292.362%20292.362%22%3E%3Cpath%20fill%3D%22%230074D9%22%20d%3D%22M287.9.953l-13.985-13.986c-3.773-3.772-9.88-3.772-13.653%200L146.18%20182.486%2032.004%2068.309c-3.772-3.772-9.88-3.772-13.652%200L4.369%2082.295c-3.772%203.772-3.772%209.88%200%2013.653l139.86%20139.86c3.772%203.772%209.88%203.772%2013.653%200l139.86-139.86c3.772-3.773%203.772-9.881%200-13.653z%22%2F%3E%3C%2Fsvg%3E');
             background-repeat: no-repeat;
             background-position: right 0.7em top 50%, 0 0;
             background-size: 0.65em auto, 100%;
@@ -721,7 +731,7 @@
             const isReuseDisabled = currentStatus !== 'ended';
 
             const row = $(`
-                <tr class="border-b border-gray-200 hover:bg-blue-50 opacity-0" style="transform: translateY(20px);">
+                <tr class="border-b border-gray-200 hover:bg-blue-50" data-index="${index}">
                     <td class="py-3 px-6 text-left font-semibold">${practice.title || '无标题'}</td>
                     <td class="py-3 px-6 text-left">
                         <div class="flex items-center">
@@ -781,11 +791,7 @@
             $practiceListTbody.append(row);
 
             setTimeout(() => {
-                row.css({
-                    'opacity': '1',
-                    'transform': 'translateY(0)',
-                    'transition': 'opacity 0.5s ease, transform 0.5s ease'
-                });
+                row.addClass('fade-in');
             }, 50 * index);
         });
 

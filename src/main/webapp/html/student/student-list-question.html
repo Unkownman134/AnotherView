@@ -16,6 +16,7 @@
             color: #333;
             line-height: 1.6;
             padding-bottom: 80px;
+            overflow-x: hidden;
         }
 
         .container {
@@ -33,6 +34,12 @@
             margin-bottom: 2rem;
             border-radius: 12px;
             color: white;
+            animation: slideInDown 0.8s ease-out;
+        }
+
+        @keyframes slideInDown {
+            0% { transform: translateY(-100px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
         }
 
         #header h2 {
@@ -71,11 +78,13 @@
             background-color: rgba(255, 255, 255, 0.2);
             color: white;
             backdrop-filter: blur(5px);
+            z-index: 1;
         }
 
         .btn-view:hover {
             background-color: rgba(255, 255, 255, 0.3);
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transform: translateY(-2px);
         }
         .btn-view::after, .submit-btn::after {
             content: "";
@@ -89,6 +98,7 @@
             border-radius: 100%;
             transform: scale(1, 1) translate(-50%, -50%);
             transform-origin: 50% 50%;
+            z-index: -1;
         }
         .btn-view:focus:not(:active)::after, .submit-btn:focus:not(:active)::after {
             animation: ripple 1s ease-out;
@@ -107,6 +117,13 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             border: 1px solid #e0e7ff;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .question-item.fade-in {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         .question-item:hover {
@@ -165,7 +182,15 @@
         .options-list input[type="checkbox"]:checked {
             border-color: #6366f1;
             background-color: #6366f1;
+            animation: check-animation 0.3s ease-in-out;
         }
+
+        @keyframes check-animation {
+            0% { transform: scale(0.8); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
         .options-list input[type="radio"]:checked::before {
             content: '';
             position: absolute;
@@ -244,6 +269,41 @@
             position: relative;
             overflow: hidden;
             box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+            animation: bounceIn 0.8s ease-out 0.5s both;
+        }
+
+        @keyframes bounceIn {
+            0%, 20%, 40%, 60%, 80%, 100% {
+                -webkit-transition-timing-function: cubic-bezier(0.215, .61, .355, 1);
+                transition-timing-function: cubic-bezier(0.215, .61, .355, 1)
+            }
+            0% {
+                opacity: 0;
+                -webkit-transform: scale3d(.3, .3, .3);
+                transform: scale3d(.3, .3, .3)
+            }
+            20% {
+                -webkit-transform: scale3d(1.1, 1.1, 1.1);
+                transform: scale3d(1.1, 1.1, 1.1)
+            }
+            40% {
+                -webkit-transform: scale3d(.9, .9, .9);
+                transform: scale3d(.9, .9, .9)
+            }
+            60% {
+                opacity: 1;
+                -webkit-transform: scale3d(1.03, 1.03, 1.03);
+                transform: scale3d(1.03, 1.03, 1.03)
+            }
+            80% {
+                -webkit-transform: scale3d(.97, .97, .97);
+                transform: scale3d(.97, .97, .97)
+            }
+            100% {
+                opacity: 1;
+                -webkit-transform: scale3d(1, 1, 1);
+                transform: scale3d(1, 1, 1)
+            }
         }
 
         .submit-btn:hover {
@@ -256,6 +316,7 @@
             cursor: not-allowed;
             transform: none;
             box-shadow: none;
+            animation: none;
         }
 
         .readonly-mode input,
@@ -282,6 +343,13 @@
             font-size: 1rem;
             line-height: 1.5;
             box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        .correct-answer.fade-in, .previous-answer.fade-in, .feedback.fade-in, .grade.fade-in {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         .correct-answer {
@@ -343,17 +411,20 @@
             0% { background-position: -200% 0; }
             100% { background-position: 200% 0; }
         }
+        #loading-message {
+            transition: opacity 0.5s ease;
+        }
     </style>
 </head>
 <body class="p-6">
 <div class="container mx-auto">
-    <div id="header" class="animate__animated animate__fadeInDown">
+    <div id="header">
         <button onclick="goBack()" class="btn-view"><i class="fas fa-arrow-left mr-2"></i> 返回</button>
         <h2 id="practiceTitle"><i class="fas fa-clipboard-list"></i> 练习详情</h2>
         <span>截止时间: <span id="endTime"></span></span>
     </div>
 
-    <form id="answerForm" class="animate__animated animate__fadeInUp">
+    <form id="answerForm">
         <div id="questionsContainer">
             <div id="loading-message" class="text-center py-8 text-gray-500">
                 <div class="loader mb-3" role="status" aria-label="加载中"></div>
@@ -376,8 +447,6 @@
     let hasPreviousSubmission = false;
 
     $(function () {
-        $('#answerForm').addClass('animate__animated animate__fadeInUp');
-
         $.get(`/Anotherview/api/student/practiceDetails?practice_id=${practiceId}`, function (practice) {
             $('#practiceTitle').append(`: ${escapeHtml(practice.title || '无标题')}`);
             const endTimeText = practice.endAt ? new Date(practice.endAt).toLocaleString() : '未设定';
@@ -478,7 +547,7 @@
             }
 
             const questionHtml = `
-                <div class="question-item animate__animated animate__fadeIn" data-qid="${q.id}" style="animation-delay: ${index * 0.1}s;">
+                <div class="question-item" data-qid="${q.id}">
                     <h3>${questionIndex}. ${escapeHtml(q.content || '题目内容缺失')} (${q.type ? q.type.replace('_', ' ') : '未知类型'}, ${q.score || 0}分)</h3>
                     ${optionsHtml}
                     ${inputHtml}
@@ -494,6 +563,10 @@
                     ${correctHtml}
                 </div>`;
             container.append(questionHtml);
+
+            setTimeout(() => {
+                container.find(`.question-item[data-qid="${q.id}"]`).addClass('fade-in');
+            }, 100 * index);
         });
         $("#loading-message").hide();
     }
@@ -552,6 +625,12 @@
                                         previousAnswerDiv.addClass('is-incorrect');
                                     }
                                 }
+                                setTimeout(() => {
+                                    previousAnswerDiv.addClass('fade-in');
+                                    questionItem.find('.grade').addClass('fade-in');
+                                    questionItem.find('.feedback').addClass('fade-in');
+                                    questionItem.find('.correct-answer').addClass('fade-in');
+                                }, 200);
                             }
                         }
                     }

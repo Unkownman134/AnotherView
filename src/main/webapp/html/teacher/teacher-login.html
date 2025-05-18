@@ -49,6 +49,11 @@
             }
         }
 
+        @keyframes fadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+
         body {
             font-family: 'Quicksand', sans-serif;
             background: linear-gradient(135deg, #f8f0f4 0%, #e9d8f2 100%);
@@ -114,7 +119,7 @@
         }
 
         form {
-            animation: slidePopIn 0.8s ease-out 0.5s forwards;
+            animation: fadeIn 0.8s ease-out 0.5s forwards;
             opacity: 0;
         }
 

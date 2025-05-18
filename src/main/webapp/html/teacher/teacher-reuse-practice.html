@@ -14,15 +14,26 @@
             font-family: 'Nunito', sans-serif;
             transition: background-color 0.3s ease;
             background-color: #f4f7f6;
+            overflow-x: hidden;
         }
 
         .transition-all {
             transition: all 0.3s ease-in-out;
         }
 
+        .form-container {
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
         .btn {
             position: relative;
             overflow: hidden;
+            z-index: 1;
         }
 
         .btn::after {
@@ -37,6 +48,7 @@
             border-radius: 100%;
             transform: scale(1, 1) translate(-50%, -50%);
             transform-origin: 50% 50%;
+            z-index: -1;
         }
 
         .btn:focus:not(:active)::after {
@@ -76,6 +88,17 @@
         button {
             writing-mode: horizontal-tb;
             text-orientation: mixed;
+        }
+
+        #question-table tbody tr {
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        #question-table tbody tr.fade-in {
+            opacity: 1;
+            transform: translateY(0);
         }
 
     </style>
@@ -244,15 +267,18 @@
             $questionTableBody.append('<tr><td colspan="3" class="text-center text-gray-500 py-4">原练习无题目。</td></tr>');
             return;
         }
-        questions.forEach(question => {
-            const row = `
+        questions.forEach((question, index) => {
+            const row = $(`
 		                <tr class="border-b border-gray-200 hover:bg-blue-50 last:border-b-0">
 		                    <td class="py-2 px-6 text-left">${question.id}</td>
 		                    <td class="py-2 px-6 text-left">${question.content ? question.content.substring(0, 80) + (question.content.length > 80 ? '...' : '') : '无内容'}</td>
 		                    <td class="py-2 px-6 text-left">${question.score || 0}</td>
 		                </tr>
-		            `;
+		            `);
             $questionTableBody.append(row);
+            setTimeout(() => {
+                row.addClass('fade-in');
+            }, 50 * index);
         });
     }
 

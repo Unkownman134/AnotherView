@@ -14,10 +14,20 @@
       font-family: 'Nunito', sans-serif;
       transition: background-color 0.3s ease;
       background-color: #f4f7f6;
+      overflow-x: hidden;
     }
 
     .transition-all {
       transition: all 0.3s ease-in-out;
+    }
+
+    .form-container {
+      animation: fadeInUp 0.8s ease-out;
+    }
+
+    @keyframes fadeInUp {
+      0% { opacity: 0; transform: translateY(20px); }
+      100% { opacity: 1; transform: translateY(0); }
     }
 
     .modal {
@@ -87,6 +97,7 @@
     .btn {
       position: relative;
       overflow: hidden;
+      z-index: 1;
     }
 
     .btn::after {
@@ -101,6 +112,7 @@
       border-radius: 100%;
       transform: scale(1, 1) translate(-50%, -50%);
       transform-origin: 50% 50%;
+      z-index: -1;
     }
 
     .btn:focus:not(:active)::after {
@@ -180,6 +192,17 @@
     button {
       writing-mode: horizontal-tb;
       text-orientation: mixed;
+    }
+
+    #selectedQuestionsBody tr {
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    #selectedQuestionsBody tr.fade-in {
+      opacity: 1;
+      transform: translateY(0);
     }
 
   </style>
@@ -450,7 +473,7 @@
       return;
     }
     selectedQuestions.forEach((question, index) => {
-      const row = `
+      const row = $(`
 		      <tr class="border-b border-gray-200 hover:bg-blue-50">
 		        <td class="py-3 px-6 text-left">${index + 1}</td>
 		        <td class="py-3 px-6 text-left">${question.id}</td>
@@ -463,8 +486,11 @@
       }
 		        </td>
 		      </tr>
-		    `;
+		    `);
       questionTableBody.append(row);
+      setTimeout(() => {
+        row.addClass('fade-in');
+      }, 50 * index);
     });
     $("#questionNum").val(selectedQuestions.length);
   }

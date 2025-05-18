@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap');
 
@@ -14,10 +15,20 @@
             font-family: 'Nunito', sans-serif;
             transition: background-color 0.3s ease;
             background-color: #f4f7f6;
+            overflow-x: hidden;
         }
 
         .transition-all {
             transition: all 0.3s ease-in-out;
+        }
+
+        .form-container {
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
         }
 
         .modal {
@@ -87,6 +98,7 @@
         .btn {
             position: relative;
             overflow: hidden;
+            z-index: 1;
         }
 
         .btn::after {
@@ -101,6 +113,7 @@
             border-radius: 100%;
             transform: scale(1, 1) translate(-50%, -50%);
             transform-origin: 50% 50%;
+            z-index: -1;
         }
 
         .btn:focus:not(:active)::after {
@@ -180,6 +193,45 @@
             margin-right: 10px;
         }
 
+        #selectedQuestions tr {
+            cursor: grab;
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        #selectedQuestions tr.fade-in {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        #selectedQuestions tr:active {
+            cursor: grabbing;
+            transform: scale(1.02);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            z-index: 2;
+        }
+
+        #selectedQuestions tr.sortable-chosen {
+            background-color: #e0e7ff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        #selectedQuestions tr.sortable-ghost {
+            opacity: 0.4;
+        }
+
+        .drag-handle {
+            cursor: grab;
+            margin-right: 10px;
+            color: #9ca3af;
+            transition: color 0.2s ease;
+        }
+
+        #selectedQuestions tr:hover .drag-handle {
+            color: #4f46e5;
+        }
+
     </style>
 </head>
 <body class="bg-gray-100 p-6 font-sans">
@@ -237,6 +289,7 @@
                 <i class="fas fa-question-circle text-teal-500 mr-2" aria-hidden="true"></i>
                 题目列表:
             </label>
+            <p class="text-gray-600 text-sm mb-2 flex items-center"><i class="fas fa-info-circle mr-1 text-blue-500"></i> 提示：在下方表格中按住题目行可以拖动排序。</p>
             <button type="button" onclick="openQuestionModal()" class="btn bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all mb-2 flex items-center">
                 <i class="fas fa-tasks mr-1" aria-hidden="true"></i> 题库选题
             </button>
@@ -292,10 +345,29 @@
 <script>
     let selectedQuestions = [];
     let currentLessonId = null;
+    let sortableInstance = null;
 
     $(function () {
         loadLessons();
         loadClasses();
+
+        const selectedQuestionsBody = document.getElementById('selectedQuestions');
+        sortableInstance = Sortable.create(selectedQuestionsBody, {
+            animation: 200,
+            handle: 'tr',
+            ghostClass: 'sortable-ghost',
+            chosenClass: 'sortable-chosen',
+            onEnd: function (evt) {
+                const oldIndex = evt.oldIndex;
+                const newIndex = evt.newIndex;
+
+                const [movedItem] = selectedQuestions.splice(oldIndex, 1);
+                selectedQuestions.splice(newIndex, 0, movedItem);
+
+                renderSelectedQuestions();
+            }
+        });
+
 
         document.querySelectorAll('.close-button').forEach(button => {
             button.addEventListener('click', () => {
@@ -399,9 +471,12 @@
             return;
         }
         selectedQuestions.forEach((q, index) => {
-            tbody.append(`
+            const row = $(`
                 <tr class="border-b border-gray-200 hover:bg-blue-50 last:border-b-0">
-                    <td class="py-2 px-6 text-left">${index + 1}</td>
+                    <td class="py-2 px-6 text-left flex items-center">
+                         <i class="fas fa-grip-vertical drag-handle" aria-hidden="true"></i>
+                         ${index + 1}
+                    </td>
                     <td class="py-2 px-6 text-left">${q.content ? q.content.substring(0, 50) + (q.content.length > 50 ? '...' : '') : '无内容'}</td>
                     <td class="py-2 px-6 text-left">${q.type || '未知'}</td>
                     <td class="py-2 px-6 text-left">${q.score || 0}</td>
@@ -410,6 +485,10 @@
                     </td>
                 </tr>
             `);
+            tbody.append(row);
+            setTimeout(() => {
+                row.addClass('fade-in');
+            }, 50 * index);
         });
     }
 

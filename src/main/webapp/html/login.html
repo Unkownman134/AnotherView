@@ -44,6 +44,11 @@
             }
         }
 
+        @keyframes fadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+
 
         body {
             font-family: 'Quicksand', sans-serif;
@@ -131,7 +136,15 @@
             position: relative;
             overflow: hidden;
             z-index: 1;
+            opacity: 0;
+            transform: translateY(20px);
         }
+
+        .login-button.fade-in {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
 
         .login-button.student {
             background-color: #20c997;
@@ -290,5 +303,16 @@
 <div class="footer">
     GD
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const buttons = document.querySelectorAll('.login-button');
+        buttons.forEach((button, index) => {
+            setTimeout(() => {
+                button.classList.add('fade-in');
+            }, 100 * index);
+        });
+    });
+</script>
 </body>
 </html>
