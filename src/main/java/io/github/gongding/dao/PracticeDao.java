@@ -33,8 +33,6 @@ public class PracticeDao {
 
         try {
             conn = DBUtils.getConnection();
-            conn.setAutoCommit(false);
-
             String insertPracticeSql = "INSERT INTO practice (lesson_id, teacher_id, semester_id, title, classof, start_time, end_time, question_num, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             pstmt = conn.prepareStatement(insertPracticeSql, Statement.RETURN_GENERATED_KEYS);
             pstmt.setInt(1, lessonId);
@@ -84,29 +82,18 @@ public class PracticeDao {
                         classPstmt.executeBatch();
                         DBUtils.close(null, classPstmt);
                     }
-                    conn.commit();
                 } else {
-                    conn.rollback();
+                    //如果影响行数大于0但未能获取生成的键，认为创建失败
                     newPracticeId = -1;
                 }
             } else {
-                conn.rollback();
+                //如果影响行数不大于0，认为插入练习记录失败
                 newPracticeId = -1;
             }
         } catch (SQLException e) {
             e.printStackTrace();
-            try {
-                if (conn != null) conn.rollback();
-            } catch (SQLException ex) {
-                ex.printStackTrace();
-            }
             newPracticeId = -1;
         } finally {
-            try {
-                if (conn != null) conn.setAutoCommit(true);
-            } catch (SQLException ex) {
-                ex.printStackTrace();
-            }
             DBUtils.close(conn, pstmt, rs);
         }
         return newPracticeId;
@@ -288,31 +275,17 @@ public class PracticeDao {
         PreparedStatement pstmt = null;
         try {
             conn = DBUtils.getConnection();
-            conn.setAutoCommit(false);
-
             String sql = "UPDATE practice SET end_time = ? WHERE practice_id = ?";
             pstmt = conn.prepareStatement(sql);
             pstmt.setTimestamp(1, Timestamp.valueOf(newEndTime));
             pstmt.setInt(2, practiceId);
             pstmt.executeUpdate();
 
-            updatePracticeStatus(practiceId, conn);
-
-            conn.commit();
+            updatePracticeStatus(practiceId);
 
         } catch (SQLException e) {
             e.printStackTrace();
-            try {
-                if (conn != null) conn.rollback();
-            } catch (SQLException ex) {
-                ex.printStackTrace();
-            }
         } finally {
-            try {
-                if (conn != null) conn.setAutoCommit(true);
-            } catch (SQLException ex) {
-                ex.printStackTrace();
-            }
             DBUtils.close(conn, pstmt);
         }
     }
@@ -325,28 +298,10 @@ public class PracticeDao {
      */
     public void updatePracticeStatus(int practiceId) {
         Connection conn = null;
-        try {
-            conn = DBUtils.getConnection();
-            updatePracticeStatus(practiceId, conn);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            DBUtils.close(conn, null, null);
-        }
-    }
-
-    /**
-     * 内部方法：根据练习ID和给定的连接更新练习的状态。
-     * 用于在现有事务中使用。
-     *
-     * @param practiceId 练习ID
-     * @param conn 数据库连接
-     * @throws SQLException 如果发生SQL异常
-     */
-    private void updatePracticeStatus(int practiceId, Connection conn) throws SQLException {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         try {
+            conn = DBUtils.getConnection();
             String selectSql = "SELECT start_time, end_time, status FROM practice WHERE practice_id = ?";
             pstmt = conn.prepareStatement(selectSql);
             pstmt.setInt(1, practiceId);
@@ -368,8 +323,10 @@ public class PracticeDao {
                     DBUtils.close(null, updatePstmt);
                 }
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
         } finally {
-            DBUtils.close(null, pstmt, rs);
+            DBUtils.close(conn, pstmt, rs);
         }
     }
 
@@ -393,7 +350,6 @@ public class PracticeDao {
 
         try {
             conn = DBUtils.getConnection();
-            conn.setAutoCommit(false);
 
             //用于更新practice表中指定练习的基本信息字段
             String updatePracticeSql = "UPDATE practice SET title = ?, classof = ?, start_time = ?, end_time = ?, question_num = ? WHERE practice_id = ?";
@@ -430,25 +386,12 @@ public class PracticeDao {
                 }
                 success = true;
 
-                updatePracticeStatus(practiceId, conn);
-
-                conn.commit();
-            } else {
-                conn.rollback();
+                //根据新的开始和结束时间重新计算并更新练习的状态，确保状态字段是最新的
+                updatePracticeStatus(practiceId);
             }
         } catch (SQLException e) {
             e.printStackTrace();
-            try {
-                if (conn != null) conn.rollback();
-            } catch (SQLException ex) {
-                ex.printStackTrace();
-            }
         } finally {
-            try {
-                if (conn != null) conn.setAutoCommit(true);
-            } catch (SQLException ex) {
-                ex.printStackTrace();
-            }
             DBUtils.close(conn, pstmt);
         }
         return success;
@@ -475,8 +418,8 @@ public class PracticeDao {
 
         try {
             conn = DBUtils.getConnection();
-            conn.setAutoCommit(false);
 
+            //新练习记录的SQL语句
             String insertPracticeSql = "INSERT INTO practice (lesson_id, teacher_id, semester_id, title, classof, start_time, end_time, question_num, status, created_at) " + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             pstmt = conn.prepareStatement(insertPracticeSql, Statement.RETURN_GENERATED_KEYS);
 
@@ -526,30 +469,17 @@ public class PracticeDao {
                         classPstmt.executeBatch();
                         DBUtils.close(null, classPstmt);
                     }
-                    conn.commit();
 
                 } else {
-                    conn.rollback();
                     newPracticeId = -1;
                 }
             } else {
-                conn.rollback();
                 newPracticeId = -1;
             }
         } catch (SQLException e) {
             e.printStackTrace();
-            try {
-                if (conn != null) conn.rollback();
-            } catch (SQLException ex) {
-                ex.printStackTrace();
-            }
             newPracticeId = -1;
         } finally {
-            try {
-                if (conn != null) conn.setAutoCommit(true);
-            } catch (SQLException ex) {
-                ex.printStackTrace();
-            }
             DBUtils.close(conn, pstmt, rs);
         }
         return newPracticeId;
