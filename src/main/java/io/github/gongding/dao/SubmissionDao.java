@@ -26,6 +26,7 @@ public class SubmissionDao {
 
         try {
             conn = DBUtils.getConnection();
+            conn.setAutoCommit(false);
 
             String selectLatestSubmissionSql = "SELECT submission_id FROM submission " +
                     "WHERE student_id = ? AND practice_id = ? " +
@@ -70,10 +71,12 @@ public class SubmissionDao {
                         submissionIdToUse = rs.getInt(1);
                     } else {
                         System.err.println("创建提交记录失败，未能获取生成的 submission_id。");
+                        conn.rollback();
                         return -1;
                     }
                 } else {
                     System.err.println("创建提交记录失败，submission 表未插入行。");
+                    conn.rollback();
                     return -1;
                 }
                 if (rs != null) { rs.close(); rs = null; }
@@ -82,6 +85,7 @@ public class SubmissionDao {
 
             if (submissionIdToUse == -1) {
                 System.err.println("无效的 submission_id，无法保存答案。");
+                conn.rollback();
                 return -1;
             }
 
@@ -139,8 +143,10 @@ public class SubmissionDao {
                         }
                         if (Boolean.TRUE.equals(isCorrect)) {
                             grade = question.getScore();
+                            gradedAt = Timestamp.valueOf(LocalDateTime.now());
                         } else if (Boolean.FALSE.equals(isCorrect)){
                             grade = 0.0;
+                            gradedAt = Timestamp.valueOf(LocalDateTime.now());
                         }
                     }
                 } else {
@@ -157,13 +163,24 @@ public class SubmissionDao {
                 stmt.addBatch();
             }
             stmt.executeBatch();
+            conn.commit();
             return submissionIdToUse;
 
 
         } catch (SQLException e) {
             e.printStackTrace();
+            try {
+                if (conn != null) conn.rollback();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
             return -1;
         } finally {
+            try {
+                if (conn != null) conn.setAutoCommit(true);
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
             DBUtils.close(null, stmt, rs);
             DBUtils.close(conn, null, null);
         }
@@ -224,13 +241,12 @@ public class SubmissionDao {
 
         try {
             conn = DBUtils.getConnection();
-            String sql = "SELECT SUM(q.score) AS obtained_score " +
+            String sql = "SELECT SUM(sa.grade) AS obtained_score " +
                     "FROM submission s " +
                     "JOIN submission_answer sa ON s.submission_id = sa.submission_id " +
-                    "JOIN question q ON sa.question_id = q.question_id " +
                     "WHERE s.student_id = ? AND s.practice_id = ? " +
-                    "AND s.submitted_at = (SELECT MAX(submitted_at) FROM submission WHERE student_id = ? AND practice_id = ?) " + // Latest submission
-                    "AND (sa.is_correct = TRUE OR sa.grade IS NOT NULL)"; // Include auto-correct and manually graded
+                    "AND s.submitted_at = (SELECT MAX(submitted_at) FROM submission WHERE student_id = ? AND practice_id = ?) " +
+                    "AND sa.grade IS NOT NULL";
 
             pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, studentId);
@@ -302,15 +318,20 @@ public class SubmissionDao {
         try {
             conn = DBUtils.getConnection();
 
-            String latestSubmissionSql = "SELECT submission_id FROM submission WHERE student_id = ? AND practice_id = ? ORDER BY submitted_at DESC LIMIT 1";
+            String latestSubmissionSql = "SELECT submission_id, submitted_at FROM submission WHERE student_id = ? AND practice_id = ? ORDER BY submitted_at DESC LIMIT 1";
             pstmt = conn.prepareStatement(latestSubmissionSql);
             pstmt.setInt(1, studentId);
             pstmt.setInt(2, practiceId);
             rs = pstmt.executeQuery();
 
             int submissionId = -1;
+            LocalDateTime submittedAt = null;
             if (rs.next()) {
                 submissionId = rs.getInt("submission_id");
+                Timestamp submittedAtTs = rs.getTimestamp("submitted_at");
+                if (submittedAtTs != null) {
+                    submittedAt = submittedAtTs.toLocalDateTime();
+                }
             }
             DBUtils.close(null, pstmt, rs);
             pstmt = null;
@@ -335,6 +356,7 @@ public class SubmissionDao {
 
                 submission = new HashMap<>();
                 submission.put("submissionId", submissionId);
+                submission.put("submittedAt", submittedAt);
                 submission.put("answers", answers);
             }
 
