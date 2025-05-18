@@ -556,13 +556,11 @@
         newlySelected.push(question);
       }
     });
-
     const remainingSelected = selectedQuestions.filter(sq => {
-      const sqValue = JSON.stringify(sq);
-      return $(`#questionList input[type='checkbox'][value='${sqValue.replace(/'/g, "&#39;")}']`).prop('checked');
+      const checkbox = $(`#questionList input[type='checkbox'][value='${JSON.stringify(sq).replace(/'/g, "&#39;")}']`);
+      return checkbox.length > 0 && checkbox.prop('checked');
     });
-
-    selectedQuestions = [...remainingSelected, ...newSelected];
+    selectedQuestions = [...remainingSelected, ...newlySelected];
 
     renderSelectedQuestions();
     hideModal($("#questionModal")[0]);
