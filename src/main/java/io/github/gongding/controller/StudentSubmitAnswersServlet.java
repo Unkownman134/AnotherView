@@ -82,8 +82,18 @@ public class StudentSubmitAnswersServlet extends HttpServlet {
 
         try {
             //创建提交记录并保存答案
-            submissionDao.createSubmission(student.getId(), practiceId, answers);
-            resp.getWriter().write(mapper.writeValueAsString(Map.of("message", "提交成功")));
+            Map<String, Object> existingSubmission = submissionDao.getLatestSubmission(student.getId(), practiceId);
+            boolean isUpdateOperation = (existingSubmission != null && existingSubmission.containsKey("submissionId"));
+
+            int submissionId = submissionDao.createSubmission(student.getId(), practiceId, answers);
+
+            if (submissionId != -1) {
+                String message = isUpdateOperation ? "修改成功" : "提交成功";
+                //返回操作类型给前端，方便前端显示不同提示
+                resp.getWriter().write(mapper.writeValueAsString(Map.of("message", message, "submissionId", submissionId, "operation", isUpdateOperation ? "updated" : "created")));
+            } else {
+                resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "提交处理失败，未能保存提交记录");
+            }
         } catch (IllegalArgumentException e) {
             resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "提交失败：" + e.getMessage());
         } catch (RuntimeException e) {

@@ -20,123 +20,153 @@ public class SubmissionDao {
      */
     public int createSubmission(int studentId, int practiceId, List<Map<String, Object>> answers) {
         Connection conn = null;
-        PreparedStatement submissionPstmt = null;
-        PreparedStatement answerPstmt = null;
+        PreparedStatement stmt = null;
         ResultSet rs = null;
-        // 初始化新创建提交记录的ID，失败时返回 -1
-        int submissionId = -1;
+        int submissionIdToUse = -1;
 
         try {
             conn = DBUtils.getConnection();
 
-            String insertSubmissionSql = "INSERT INTO submission (student_id, practice_id, submitted_at) VALUES (?, ?, ?)";
-            submissionPstmt = conn.prepareStatement(insertSubmissionSql, Statement.RETURN_GENERATED_KEYS);
-            submissionPstmt.setInt(1, studentId);
-            submissionPstmt.setInt(2, practiceId);
-            submissionPstmt.setTimestamp(3, Timestamp.valueOf(LocalDateTime.now()));
+            String selectLatestSubmissionSql = "SELECT submission_id FROM submission " +
+                    "WHERE student_id = ? AND practice_id = ? " +
+                    "ORDER BY submission_id DESC LIMIT 1";
+            stmt = conn.prepareStatement(selectLatestSubmissionSql);
+            stmt.setInt(1, studentId);
+            stmt.setInt(2, practiceId);
+            rs = stmt.executeQuery();
 
-            int affectedRows = submissionPstmt.executeUpdate();
+            if (rs.next()) {
+                submissionIdToUse = rs.getInt("submission_id");
+            }
+            if (rs != null) { rs.close(); rs = null; }
+            if (stmt != null) { stmt.close(); stmt = null; }
 
-            if (affectedRows > 0) {
-                rs = submissionPstmt.getGeneratedKeys();
-                if (rs.next()) {
-                    //获取新创建提交记录的ID
-                    submissionId = rs.getInt(1);
 
-                    String insertAnswerSql = "INSERT INTO submission_answer (submission_id, question_id, student_answer, is_correct, grade, feedback, graded_at) VALUES (?, ?, ?, ?, ?, ?, ?)";
-                    answerPstmt = conn.prepareStatement(insertAnswerSql);
+            if (submissionIdToUse != -1) {
+                String deleteAnswersSql = "DELETE FROM submission_answer WHERE submission_id = ?";
+                stmt = conn.prepareStatement(deleteAnswersSql);
+                stmt.setInt(1, submissionIdToUse);
+                stmt.executeUpdate();
+                if (stmt != null) { stmt.close(); stmt = null; }
 
-                    //遍历学生提交的每个题目的答案
-                    for (Map<String, Object> answer : answers) {
-                        int questionId = (Integer) answer.get("questionId");
-                        String studentAnswer = (String) answer.get("answer");
+                String updateSubmissionTimeSql = "UPDATE submission SET submitted_at = ? WHERE submission_id = ?";
+                stmt = conn.prepareStatement(updateSubmissionTimeSql);
+                stmt.setTimestamp(1, Timestamp.valueOf(LocalDateTime.now()));
+                stmt.setInt(2, submissionIdToUse);
+                stmt.executeUpdate();
+                if (stmt != null) { stmt.close(); stmt = null; }
 
-                        QuestionEntity question = questionDao.getQuestionById(questionId);
+            } else {
+                String insertSubmissionSql = "INSERT INTO submission (student_id, practice_id, submitted_at) VALUES (?, ?, ?)";
+                stmt = conn.prepareStatement(insertSubmissionSql, Statement.RETURN_GENERATED_KEYS);
+                stmt.setInt(1, studentId);
+                stmt.setInt(2, practiceId);
+                stmt.setTimestamp(3, Timestamp.valueOf(LocalDateTime.now()));
+                int affectedRows = stmt.executeUpdate();
 
-                        Boolean isCorrect = null;
-                        Double grade = null;
-                        String feedback = null;
-                        Timestamp gradedAt = null;
+                if (affectedRows > 0) {
+                    rs = stmt.getGeneratedKeys();
+                    if (rs.next()) {
+                        submissionIdToUse = rs.getInt(1);
+                    } else {
+                        System.err.println("创建提交记录失败，未能获取生成的 submission_id。");
+                        return -1;
+                    }
+                } else {
+                    System.err.println("创建提交记录失败，submission 表未插入行。");
+                    return -1;
+                }
+                if (rs != null) { rs.close(); rs = null; }
+                if (stmt != null) { stmt.close(); stmt = null; }
+            }
 
-                        //检查是否成功获取了题目详情
-                        if (question != null) {
-                            String questionType = question.getType();
-                            String correctAnswer = question.getCorrectAnswer();
+            if (submissionIdToUse == -1) {
+                System.err.println("无效的 submission_id，无法保存答案。");
+                return -1;
+            }
 
-                            //检查题目类型是否是单选或填空，并且存在正确答案
-                            if (("single_choice".equals(questionType) || "fill_blank".equals(questionType)) && correctAnswer != null && !correctAnswer.trim().isEmpty()) {
-                                //对于单选和简单填空，直接比较学生答案和正确答案
-                                boolean match = studentAnswer != null && correctAnswer.trim().equalsIgnoreCase(studentAnswer.trim());
+            String insertAnswerSql = "INSERT INTO submission_answer (submission_id, question_id, student_answer, is_correct, grade, feedback, graded_at) VALUES (?, ?, ?, ?, ?, ?, ?)";
+            stmt = conn.prepareStatement(insertAnswerSql);
 
-                                if ("fill_blank".equals(questionType) && correctAnswer.contains(",")) {
-                                    //将正确答案和学生答案都按逗号分割成列表
-                                    List<String> correctParts = Arrays.asList(correctAnswer.split(","));
-                                    List<String> studentParts = studentAnswer != null && !studentAnswer.trim().isEmpty() ? Arrays.asList(studentAnswer.split(",")) : Collections.emptyList();
+            for (Map<String, Object> answerMap : answers) {
+                int questionId = (Integer) answerMap.get("questionId");
+                String studentAnswerText = (String) answerMap.get("studentAnswer");
 
-                                    //首先检查分割后的部分数量是否一致
-                                    match = correctParts.size() == studentParts.size();
-                                    if (match) {
+                QuestionEntity question = questionDao.getQuestionById(questionId);
+
+                Boolean isCorrect = null;
+                Double grade = null;
+                String feedback = null;
+                Timestamp gradedAt = null;
+
+                if (question != null) {
+                    String questionType = question.getType();
+                    String correctAnswerDB = question.getCorrectAnswer();
+
+                    if (("single_choice".equals(questionType) || "multiple_choice".equals(questionType) || "fill_blank".equals(questionType))
+                            && correctAnswerDB != null && !correctAnswerDB.trim().isEmpty()) {
+                        if (studentAnswerText != null && !studentAnswerText.trim().isEmpty()) {
+                            String studentAnswerTrimmed = studentAnswerText.trim();
+                            String correctAnswerTrimmed = correctAnswerDB.trim();
+                            if ("single_choice".equals(questionType)) {
+                                isCorrect = correctAnswerTrimmed.equalsIgnoreCase(studentAnswerTrimmed);
+                            } else if ("multiple_choice".equals(questionType)) {
+                                Set<String> correctOptions = new HashSet<>(Arrays.asList(correctAnswerTrimmed.toLowerCase().split("\\s*,\\s*")));
+                                Set<String> studentOptions = new HashSet<>(Arrays.asList(studentAnswerTrimmed.toLowerCase().split("\\s*,\\s*")));
+                                isCorrect = correctOptions.equals(studentOptions);
+                            } else if ("fill_blank".equals(questionType)) {
+                                if (correctAnswerTrimmed.contains(",")) {
+                                    List<String> correctParts = Arrays.asList(correctAnswerTrimmed.split("\\s*,\\s*"));
+                                    List<String> studentParts = Arrays.asList(studentAnswerTrimmed.split("\\s*,\\s*"));
+                                    if (correctParts.size() == studentParts.size()) {
+                                        boolean allMatch = true;
                                         for (int i = 0; i < correctParts.size(); i++) {
                                             if (!correctParts.get(i).trim().equalsIgnoreCase(studentParts.get(i).trim())) {
-                                                //只要有一个部分不匹配，则整个答案不正确
-                                                match = false;
+                                                allMatch = false;
                                                 break;
                                             }
                                         }
+                                        isCorrect = allMatch;
+                                    } else {
+                                        isCorrect = false;
                                     }
-                                }
-
-                                isCorrect = match;
-                                //如果答案正确，设置得分和评分时间
-                                if (isCorrect != null && isCorrect) {
-                                    //设置得分为题目的满分
-                                    grade = question.getScore();
-                                    gradedAt = Timestamp.valueOf(LocalDateTime.now());
+                                } else {
+                                    isCorrect = correctAnswerTrimmed.equalsIgnoreCase(studentAnswerTrimmed);
                                 }
                             }
                         } else {
-                            System.err.println("Question " + questionId + " not found");
+                            isCorrect = false;
                         }
-
-                        answerPstmt.setInt(1, submissionId);
-                        answerPstmt.setInt(2, questionId);
-                        answerPstmt.setString(3, studentAnswer);
-
-                        if (isCorrect != null) {
-                            answerPstmt.setBoolean(4, isCorrect);
-                        } else {
-                            answerPstmt.setNull(4, Types.TINYINT);
+                        if (Boolean.TRUE.equals(isCorrect)) {
+                            grade = question.getScore();
+                        } else if (Boolean.FALSE.equals(isCorrect)){
+                            grade = 0.0;
                         }
-
-                        if (grade != null) {
-                            answerPstmt.setDouble(5, grade);
-                        } else {
-                            answerPstmt.setNull(5, Types.DECIMAL);
-                        }
-
-                        answerPstmt.setString(6, feedback);
-                        answerPstmt.setTimestamp(7, gradedAt);
-
-                        answerPstmt.addBatch();
                     }
-
-                    answerPstmt.executeBatch();
-
                 } else {
-                    submissionId = -1;
+                    System.err.println("警告: 提交答案时未找到题目详情，题目ID: " + questionId);
                 }
-            } else {
-                submissionId = -1;
+
+                stmt.setInt(1, submissionIdToUse);
+                stmt.setInt(2, questionId);
+                stmt.setString(3, studentAnswerText);
+                if (isCorrect != null) stmt.setBoolean(4, isCorrect); else stmt.setNull(4, Types.TINYINT);
+                if (grade != null) stmt.setDouble(5, grade); else stmt.setNull(5, Types.DECIMAL);
+                stmt.setString(6, feedback);
+                stmt.setTimestamp(7, gradedAt);
+                stmt.addBatch();
             }
+            stmt.executeBatch();
+            return submissionIdToUse;
+
 
         } catch (SQLException e) {
             e.printStackTrace();
-            submissionId = -1;
+            return -1;
         } finally {
-            DBUtils.close(conn, submissionPstmt, rs);
-            DBUtils.close(null, answerPstmt, null);
+            DBUtils.close(null, stmt, rs);
+            DBUtils.close(conn, null, null);
         }
-        return submissionId;
     }
 
     /**
@@ -315,4 +345,6 @@ public class SubmissionDao {
         }
         return submission;
     }
+
+
 }
