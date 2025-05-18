@@ -531,21 +531,7 @@
                      </div>
                  `;
             }
-
-            let correctHtml = '';
-            if (isReadOnly && q.correctAnswer && q.correctAnswer.trim() !== '') {
-                let formattedCorrectAnswer = escapeHtml(q.correctAnswer);
-                if ((q.type === 'single_choice' || q.type === 'multiple_choice') && Array.isArray(q.options)) {
-                    const correctValues = q.correctAnswer.split(',').map(s => s.trim().toLowerCase()).filter(s => s !== '');
-                    const correctLabels = correctValues.map(val => {
-                        const optIndex = q.options.findIndex(opt => opt && opt.trim().toLowerCase() === val);
-                        return optIndex !== -1 ? String.fromCharCode(65 + optIndex) : escapeHtml(val);
-                    }).join(', ');
-                    formattedCorrectAnswer = correctLabels || formattedCorrectAnswer;
-                }
-                correctHtml = `<div class="correct-answer"><i class="fas fa-check-circle mr-2"></i><strong>正确答案：</strong>${formattedCorrectAnswer}</div>`;
-            }
-
+            const correctHtml = `<div class="correct-answer" style="display: none;"><i class="fas fa-check-circle mr-2"></i><strong>正确答案：</strong> <span class="answer-text"></span></div>`;
             const questionHtml = `
                 <div class="question-item" data-qid="${q.id}">
                     <h3>${questionIndex}. ${escapeHtml(q.content || '题目内容缺失')} (${q.type ? q.type.replace('_', ' ') : '未知类型'}, ${q.score || 0}分)</h3>
@@ -625,11 +611,31 @@
                                         previousAnswerDiv.addClass('is-incorrect');
                                     }
                                 }
+
+                                if (question.correctAnswer && question.correctAnswer.trim() !== '') {
+                                    const correctAnswerDiv = questionItem.find('.correct-answer');
+                                    let formattedCorrectAnswer = escapeHtml(question.correctAnswer);
+                                    if ((question.type === 'single_choice' || question.type === 'multiple_choice') && Array.isArray(question.options)) {
+                                        const correctValues = question.correctAnswer.split(',').map(s => s.trim().toLowerCase()).filter(s => s !== '');
+                                        const correctLabels = correctValues.map(val => {
+                                            const optIndex = question.options.findIndex(opt => opt && opt.trim().toLowerCase() === val);
+                                            return optIndex !== -1 ? String.fromCharCode(65 + optIndex) : escapeHtml(val);
+                                        }).join(', ');
+                                        formattedCorrectAnswer = correctLabels || formattedCorrectAnswer;
+                                    } else if (question.type === 'fill_blank' || question.type === 'essay') {
+                                        formattedCorrectAnswer = escapeHtml(question.correctAnswer.replace(/\n/g, '<br>') || '无');
+                                    }
+                                    correctAnswerDiv.find('.answer-text').html(formattedCorrectAnswer);
+                                    correctAnswerDiv.show();
+                                }
+
+
+                                // Apply fade-in animation to all relevant divs
                                 setTimeout(() => {
                                     previousAnswerDiv.addClass('fade-in');
                                     questionItem.find('.grade').addClass('fade-in');
                                     questionItem.find('.feedback').addClass('fade-in');
-                                    questionItem.find('.correct-answer').addClass('fade-in');
+                                    questionItem.find('.correct-answer').addClass('fade-in'); // Fade in correct answer
                                 }, 200);
                             }
                         }
@@ -637,6 +643,32 @@
                 });
             } else {
                 hasPreviousSubmission = false;
+                if (isReadOnly) {
+                    globalQuestions.forEach(question => {
+                        if (question.correctAnswer && question.correctAnswer.trim() !== '') {
+                            const questionItem = $(`div.question-item[data-qid="${question.id}"]`);
+                            if (questionItem.length > 0) {
+                                const correctAnswerDiv = questionItem.find('.correct-answer');
+                                let formattedCorrectAnswer = escapeHtml(question.correctAnswer);
+                                if ((question.type === 'single_choice' || question.type === 'multiple_choice') && Array.isArray(question.options)) {
+                                    const correctValues = question.correctAnswer.split(',').map(s => s.trim().toLowerCase()).filter(s => s !== '');
+                                    const correctLabels = correctValues.map(val => {
+                                        const optIndex = question.options.findIndex(opt => opt && opt.trim().toLowerCase() === val);
+                                        return optIndex !== -1 ? String.fromCharCode(65 + optIndex) : escapeHtml(val);
+                                    }).join(', ');
+                                    formattedCorrectAnswer = correctLabels || formattedCorrectAnswer;
+                                } else if (question.type === 'fill_blank' || question.type === 'essay') {
+                                    formattedCorrectAnswer = escapeHtml(question.correctAnswer.replace(/\n/g, '<br>') || '无');
+                                }
+                                correctAnswerDiv.find('.answer-text').html(formattedCorrectAnswer);
+                                correctAnswerDiv.show();
+                                setTimeout(() => {
+                                    correctAnswerDiv.addClass('fade-in');
+                                }, 200);
+                            }
+                        }
+                    });
+                }
             }
 
             if (!isReadOnly) {
@@ -649,6 +681,7 @@
                 if (!$('.submit-btn').text().includes("练习已截止")) {
                     $('.submit-btn').hide();
                 }
+                $('#answerForm input, #answerForm textarea').prop('disabled', true);
             }
 
 
@@ -657,10 +690,6 @@
             hasPreviousSubmission = false;
             if (!isReadOnly) {
                 $('.submit-btn').html('<i class="fas fa-check-circle mr-2"></i> 提交练习');
-            }
-        }).always(function() {
-            if (isReadOnly) {
-                $('#answerForm input, #answerForm textarea').prop('disabled', true);
             }
         });
     }
@@ -707,7 +736,12 @@
                     message = response.message;
                 }
                 alert(message);
-                submitBtn.html(`<i class="fas fa-check-circle mr-2"></i> ${escapeHtml(message)}`);
+                if (response && response.operation === 'updated') {
+                    submitBtn.html('<i class="fas fa-save mr-2"></i> 修改成功');
+                } else {
+                    submitBtn.html('<i class="fas fa-check-circle mr-2"></i> 提交成功');
+                }
+
                 setTimeout(() => {
                     if (lessonId) window.location.href = `/Anotherview/html/student/student-list-practice.html?lesson_id=${lessonId}`;
                     else history.back();
