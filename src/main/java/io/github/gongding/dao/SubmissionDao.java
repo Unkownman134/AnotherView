@@ -352,5 +352,36 @@ public class SubmissionDao {
         return submission;
     }
 
+    /**
+     * 更新学生提交记录中单个题目答案的评分和反馈。
+     *
+     * @param submissionId 提交记录的唯一标识符ID。
+     * @param questionId 题目答案所属的题目的唯一标识符ID。
+     * @param grade 要设置的新的得分。
+     * @param feedback 要设置的新的反馈信息（可以为 null）。
+     * @return 如果更新成功返回true，否则返回false。
+     */
+    public boolean updateSubmissionAnswerGrade(int submissionId, int questionId, double grade, String feedback) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        boolean success = false;
 
+        try {
+            conn = DBUtils.getConnection();
+            String sql = "UPDATE submission_answer SET grade = ?, feedback = ?, graded_at = NOW() WHERE submission_id = ? AND question_id = ?";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setDouble(1, grade);
+            pstmt.setString(2, feedback);
+            pstmt.setInt(3, submissionId);
+            pstmt.setInt(4, questionId);
+
+            int affectedRows = pstmt.executeUpdate();
+            success = affectedRows > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            DBUtils.close(conn, pstmt);
+        }
+        return success;
+    }
 }
