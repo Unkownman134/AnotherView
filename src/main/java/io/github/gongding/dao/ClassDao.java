@@ -73,4 +73,36 @@ public class ClassDao {
         }
         return classes;
     }
+
+    /**
+     * 根据练习ID获取关联的班级列表
+     * @param practiceId 练习ID
+     * @return 班级实体列表
+     */
+    public List<ClassEntity> getClassesByPracticeId(int practiceId) {
+        List<ClassEntity> classes = new ArrayList<>();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        try {
+            conn = DBUtils.getConnection();
+            String sql = "SELECT c.class_id, c.name FROM class c JOIN practice_class pc ON c.class_id = pc.class_id WHERE pc.practice_id = ?";
+
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, practiceId);
+            rs = pstmt.executeQuery();
+            while (rs.next()) {
+                ClassEntity cls = new ClassEntity();
+                cls.setId(rs.getInt("class_id"));
+                cls.setName(rs.getString("name"));
+                classes.add(cls);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            DBUtils.close(conn, pstmt, rs);
+        }
+        return classes;
+    }
 }
