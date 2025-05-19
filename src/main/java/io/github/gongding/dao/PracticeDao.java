@@ -33,7 +33,7 @@ public class PracticeDao {
 
         try {
             conn = DBUtils.getConnection();
-            conn.setAutoCommit(false);
+            // Removed: conn.setAutoCommit(false);
 
             String insertPracticeSql = "INSERT INTO practice (lesson_id, teacher_id, semester_id, title, classof, start_time, end_time, question_num, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             pstmt = conn.prepareStatement(insertPracticeSql, Statement.RETURN_GENERATED_KEYS);
@@ -84,27 +84,21 @@ public class PracticeDao {
                         classPstmt.executeBatch();
                         DBUtils.close(null, classPstmt);
                     }
-                    conn.commit();
+                    // Removed: conn.commit();
                 } else {
                     //如果影响行数大于0但未能获取生成的键，认为创建失败
                     newPracticeId = -1;
-                    conn.rollback();
+                    // Removed: conn.rollback();
                 }
             } else {
                 //如果影响行数不大于0，认为插入练习记录失败
                 newPracticeId = -1;
-                conn.rollback();
+                // Removed: conn.rollback();
             }
         } catch (SQLException e) {
             e.printStackTrace();
             newPracticeId = -1;
-            if (conn != null) {
-                try {
-                    conn.rollback();
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
-            }
+            // Removed rollback block
         } finally {
             DBUtils.close(conn, pstmt, rs);
         }
@@ -362,7 +356,7 @@ public class PracticeDao {
 
         try {
             conn = DBUtils.getConnection();
-            conn.setAutoCommit(false);
+            // Removed: conn.setAutoCommit(false);
 
             //用于更新practice表中指定练习的基本信息字段
             String updatePracticeSql = "UPDATE practice SET title = ?, classof = ?, start_time = ?, end_time = ?, question_num = ? WHERE practice_id = ?";
@@ -398,22 +392,16 @@ public class PracticeDao {
                     DBUtils.close(null, insertPstmt);
                 }
                 success = true;
-                conn.commit();
+                // Removed: conn.commit();
 
                 //根据新的开始和结束时间重新计算并更新练习的状态，确保状态字段是最新的
                 updatePracticeStatus(practiceId);
             } else {
-                conn.rollback();
+                // Removed: conn.rollback();
             }
         } catch (SQLException e) {
             e.printStackTrace();
-            if (conn != null) {
-                try {
-                    conn.rollback();
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
-            }
+            // Removed rollback block
         } finally {
             DBUtils.close(conn, pstmt);
         }
@@ -441,7 +429,7 @@ public class PracticeDao {
 
         try {
             conn = DBUtils.getConnection();
-            conn.setAutoCommit(false);
+            // Removed: conn.setAutoCommit(false);
 
             //新练习记录的SQL语句
             String insertPracticeSql = "INSERT INTO practice (lesson_id, teacher_id, semester_id, title, classof, start_time, end_time, question_num, status, created_at) " + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -493,26 +481,20 @@ public class PracticeDao {
                         classPstmt.executeBatch();
                         DBUtils.close(null, classPstmt);
                     }
-                    conn.commit();
+                    // Removed: conn.commit();
 
                 } else {
                     newPracticeId = -1;
-                    conn.rollback();
+                    // Removed: conn.rollback();
                 }
             } else {
                 newPracticeId = -1;
-                conn.rollback();
+                // Removed: conn.rollback();
             }
         } catch (SQLException e) {
             e.printStackTrace();
             newPracticeId = -1;
-            if (conn != null) {
-                try {
-                    conn.rollback();
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
-            }
+            // Removed rollback block
         } finally {
             DBUtils.close(conn, pstmt, rs);
         }

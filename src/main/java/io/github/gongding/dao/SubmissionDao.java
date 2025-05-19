@@ -26,7 +26,7 @@ public class SubmissionDao {
 
         try {
             conn = DBUtils.getConnection();
-            conn.setAutoCommit(false);
+            // Removed: conn.setAutoCommit(false);
 
             String selectLatestSubmissionSql = "SELECT submission_id FROM submission " +
                     "WHERE student_id = ? AND practice_id = ? " +
@@ -71,12 +71,12 @@ public class SubmissionDao {
                         submissionIdToUse = rs.getInt(1);
                     } else {
                         System.err.println("创建提交记录失败，未能获取生成的 submission_id。");
-                        conn.rollback();
+                        // Removed: conn.rollback();
                         return -1;
                     }
                 } else {
                     System.err.println("创建提交记录失败，submission 表未插入行。");
-                    conn.rollback();
+                    // Removed: conn.rollback();
                     return -1;
                 }
                 if (rs != null) { rs.close(); rs = null; }
@@ -85,7 +85,7 @@ public class SubmissionDao {
 
             if (submissionIdToUse == -1) {
                 System.err.println("无效的 submission_id，无法保存答案。");
-                conn.rollback();
+                // Removed: conn.rollback();
                 return -1;
             }
 
@@ -161,19 +161,13 @@ public class SubmissionDao {
                 stmt.addBatch();
             }
             stmt.executeBatch();
-            conn.commit();
+            // Removed: conn.commit();
             return submissionIdToUse;
 
 
         } catch (SQLException e) {
             e.printStackTrace();
-            if (conn != null) {
-                try {
-                    conn.rollback();
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
-            }
+            // Removed rollback block
             return -1;
         } finally {
             DBUtils.close(null, stmt, rs);
