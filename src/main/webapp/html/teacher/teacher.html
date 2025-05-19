@@ -526,6 +526,7 @@
                         <th class="py-3 px-6 text-left" scope="col">截止时间</th>
                         <th class="py-3 px-6 text-left" scope="col">状态</th>
                         <th class="py-3 px-6 text-center" scope="col">操作</th>
+                        <th class="py-3 px-6 text-center" scope="col">批改</th>
                     </tr>
                     </thead>
                     <tbody id="practice-list" class="text-gray-600 text-sm">
@@ -739,8 +740,7 @@
         for (let i = 0; i < 3; i++) {
             $("#practice-list").append(`
                 <tr>
-                    <td colspan="8" class="py-4">
-                        <div class="shimmer w-full h-10 rounded-md"></div>
+                    <td colspan="9" class="py-4"> <div class="shimmer w-full h-10 rounded-md"></div>
                     </td>
                 </tr>
             `);
@@ -841,6 +841,7 @@
 
             const isModifyDisabled = currentStatus !== 'not_started';
             const isReuseDisabled = currentStatus !== 'ended';
+            const isCorrectDisabled = currentStatus !== 'ended';
 
             const row = $(`
                 <tr class="border-b border-gray-200 hover:bg-blue-50" data-index="${index}">
@@ -896,6 +897,13 @@
                                 ${isReuseDisabled ? '<span class="tooltiptext">只有已结束的练习才能复用</span>' : ''}
                             </button>
                         </div>
+                    </td>
+                    <td class="py-3 px-6 text-center whitespace-nowrap">
+                         <button class="${isCorrectDisabled ? 'bg-gray-400 cursor-not-allowed' : 'correct-btn bg-red-500'} btn text-white font-bold py-1 px-3 rounded-lg text-xs transition duration-300 ease-in-out flex items-center justify-center tooltip"
+                                ${isCorrectDisabled ? 'disabled' : ''} data-practice-id="${practice.id}" aria-label="${isCorrectDisabled ? '批改（已结束状态可批改）' : '批改练习'}">
+                                <i class="fas fa-check-double mr-1" aria-hidden="true"></i> 批改
+                                ${isCorrectDisabled ? '<span class="tooltiptext">只有已结束的练习才能批改</span>' : ''}
+                            </button>
                     </td>
                 </tr>
             `);
@@ -953,6 +961,11 @@
             setTimeout(() => {
                 window.location.href = `teacher-reuse-practice.html?original_id=${practiceId}`;
             }, 500);
+        });
+        $(".correct-btn:not([disabled])").off('click').on('click', function () {
+            const practiceId = $(this).data('practice-id');
+            showNotification(`正在前往批改页面，练习ID: ${practiceId}`, "info");
+            window.location.href = `teacher-grade-practice.html?practiceId=${practiceId}`;
         });
     }
 
