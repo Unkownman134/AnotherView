@@ -3,6 +3,7 @@ package io.github.gongding.dao;
 import io.github.gongding.entity.QuestionEntity;
 import io.github.gongding.util.DBUtils;
 
+import java.math.BigDecimal;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -230,13 +231,17 @@ public class SubmissionDao {
 
         try {
             conn = DBUtils.getConnection();
-            String sql = "SELECT SUM(q.score) AS obtained_score " +
+            String sql = "SELECT SUM(CASE " +
+                    "WHEN sa.is_correct = TRUE THEN q.score " +
+                    "WHEN sa.grade IS NOT NULL THEN sa.grade " +
+                    "ELSE 0 " +
+                    "END) AS obtained_score " +
                     "FROM submission s " +
                     "JOIN submission_answer sa ON s.submission_id = sa.submission_id " +
                     "JOIN question q ON sa.question_id = q.question_id " +
                     "WHERE s.student_id = ? AND s.practice_id = ? " +
-                    "AND s.submitted_at = (SELECT MAX(submitted_at) FROM submission WHERE student_id = ? AND practice_id = ?) " + // Latest submission
-                    "AND (sa.is_correct = TRUE OR sa.grade IS NOT NULL)"; // Include auto-correct and manually graded
+                    "AND s.submitted_at = (SELECT MAX(submitted_at) FROM submission WHERE student_id = ? AND practice_id = ?) " +
+                    "AND (sa.is_correct = TRUE OR sa.grade IS NOT NULL)";
 
             pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, studentId);
@@ -308,8 +313,8 @@ public class SubmissionDao {
         try {
             conn = DBUtils.getConnection();
 
-            String latestSubmissionSql = "SELECT submission_id FROM submission WHERE student_id = ? AND practice_id = ? ORDER BY submitted_at DESC LIMIT 1";
-            pstmt = conn.prepareStatement(latestSubmissionSql);
+            String selectLatestSubmissionSql = "SELECT submission_id FROM submission WHERE student_id = ? AND practice_id = ? ORDER BY submitted_at DESC LIMIT 1";
+            pstmt = conn.prepareStatement(selectLatestSubmissionSql);
             pstmt.setInt(1, studentId);
             pstmt.setInt(2, practiceId);
             rs = pstmt.executeQuery();
@@ -317,6 +322,8 @@ public class SubmissionDao {
             int submissionId = -1;
             if (rs.next()) {
                 submissionId = rs.getInt("submission_id");
+            } else {
+                return null;
             }
             DBUtils.close(null, pstmt, rs);
             pstmt = null;
@@ -331,11 +338,30 @@ public class SubmissionDao {
                 List<Map<String, Object>> answers = new ArrayList<>();
                 while (rs.next()) {
                     Map<String, Object> answer = new HashMap<>();
-                    answer.put("questionId", rs.getInt("question_id"));
-                    answer.put("studentAnswer", rs.getString("student_answer"));
-                    answer.put("isCorrect", rs.getObject("is_correct"));
-                    answer.put("grade", rs.getObject("grade"));
-                    answer.put("feedback", rs.getString("feedback"));
+
+                    int questionId = rs.getInt("question_id");
+
+                    String studentAnswer = rs.getString("student_answer");
+                    Object isCorrectObj = rs.getObject("is_correct");
+                    Object gradeObj = rs.getObject("grade");
+                    String feedback = rs.getString("feedback");
+                    Boolean isCorrect = null;
+
+                    if (isCorrectObj instanceof Boolean) {
+                        isCorrect = (Boolean) isCorrectObj;
+                    }
+
+                    Double grade = null;
+                    if (gradeObj instanceof BigDecimal) {
+                        grade = ((BigDecimal) gradeObj).doubleValue();
+                    } else if (gradeObj instanceof Number) {
+                        grade = ((Number) gradeObj).doubleValue();
+                    }
+                    answer.put("questionId", questionId);
+                    answer.put("studentAnswer", studentAnswer);
+                    answer.put("isCorrect", isCorrect);
+                    answer.put("grade", grade);
+                    answer.put("feedback", feedback);
                     answers.add(answer);
                 }
 
