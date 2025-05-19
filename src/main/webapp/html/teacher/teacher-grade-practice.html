@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>批改练习</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #f9fafb;
+            color: #1f2937;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+
+        .card {
+            background-color: #ffffff;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .header h1 {
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+        }
+
+        .header h1 i {
+            margin-right: 0.75rem;
+            color: #ef4444;
+        }
+
+        .practice-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px dashed #e5e7eb;
+        }
+
+        .practice-info-item {
+            display: flex;
+            align-items: center;
+            font-size: 1rem;
+            color: #374151;
+        }
+
+        .practice-info-item i {
+            margin-right: 0.5rem;
+            color: #3b82f6;
+        }
+
+        .practice-info-item strong {
+            margin-right: 0.5rem;
+            color: #1f2937;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border-radius: 0.5rem;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead th {
+            background-color: #f3f4f6;
+            color: #4b5563;
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-align: left;
+            padding: 0.75rem 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid #e5e7eb;
+            transition: background-color 0.2s ease;
+        }
+
+        tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        tbody tr:hover {
+            background-color: #f9fafb;
+        }
+
+        tbody td {
+            padding: 1rem 1.5rem;
+            font-size: 0.875rem;
+            color: #374151;
+            white-space: nowrap;
+        }
+
+        .loader-container {
+            text-align: center;
+            padding: 3rem;
+            color: #6b7280;
+        }
+
+        .loader {
+            border: 4px solid rgba(59, 130, 246, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #3b82f6;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .status-completed {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-pending {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-graded {
+            background-color: #bfdbfe;
+            color: #1e40af;
+        }
+
+        .status-not-submitted {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-action {
+            background-color: #e0f2f7;
+            color: #0e7490;
+            cursor: pointer;
+        }
+
+        .status-action:hover {
+            background-color: #bae6fd;
+        }
+
+        .action-button {
+            background-color: #3b82f6;
+            color: white;
+            padding: 0.375rem 0.75rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            transition: background-color 0.2s ease;
+        }
+
+        .action-button:hover {
+            background-color: #2563eb;
+        }
+
+        .action-button:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.is-visible {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            width: 90%;
+            max-width: 700px;
+            position: relative;
+            animation: animatezoom 0.6s;
+        }
+
+        @keyframes animatezoom {
+            from {transform: scale(0)}
+            to {transform: scale(1)}
+        }
+
+        .close-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #aaa;
+            cursor: pointer;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: #000;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .modal-body label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .modal-body textarea,
+        .modal-body input[type="number"] {
+            width: 100%;
+            padding: 0.5rem;
+            margin-bottom: 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            box-sizing: border-box;
+        }
+
+        .modal-body .answer-display {
+            background-color: #f3f4f6;
+            padding: 0.75rem;
+            border-radius: 0.375rem;
+            margin-bottom: 1rem;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 1rem;
+            margin-top: 1rem;
+        }
+
+        .modal-footer button {
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .modal-footer .cancel-button {
+            background-color: #e5e7eb;
+            color: #374151;
+        }
+
+        .modal-footer .cancel-button:hover {
+            background-color: #d1d5db;
+        }
+
+        .modal-footer .save-button {
+            background-color: #3b82f6;
+            color: white;
+        }
+
+        .modal-footer .save-button:hover {
+            background-color: #2563eb;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header class="header">
+        <h1><i class="fas fa-check-double" aria-hidden="true"></i>批改练习</h1>
+        <button class="action-button" onclick="window.history.back()">
+            <i class="fas fa-arrow-left mr-2" aria-hidden="true"></i>返回练习列表
+        </button>
+    </header>
+
+    <section id="practice-details" class="card practice-info">
+        <div class="practice-info-item"><i class="fas fa-clipboard-list" aria-hidden="true"></i><strong>练习标题:</strong> <span id="practice-title">加载中...</span></div>
+        <div class="practice-info-item"><i class="fas fa-book-open" aria-hidden="true"></i><strong>所属课程:</strong> <span id="lesson-name">加载中...</span></div>
+        <div class="practice-info-item"><i class="fas fa-users" aria-hidden="true"></i><strong>班级:</strong> <span id="class-names">加载中...</span></div>
+        <div class="practice-info-item"><i class="fas fa-list-ol" aria-hidden="true"></i><strong>题目数量:</strong> <span id="question-count">加载中...</span></div>
+        <div class="practice-info-item"><i class="fas fa-calendar-alt" aria-hidden="true"></i><strong>截止时间:</strong> <span id="end-time">加载中...</span></div>
+    </section>
+
+    <section class="card">
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-3 flex items-center">
+            <i class="fas fa-users text-blue-500 mr-2" aria-hidden="true"></i>
+            学生提交情况
+        </h2>
+
+        <div class="table-container">
+            <table id="submission-table">
+                <thead>
+                <tr>
+                    <th>班级</th>
+                    <th>学号</th>
+                    <th>姓名</th>
+                    <th>完成题数</th>
+                    <th>总分</th>
+                </tr>
+                </thead>
+                <tbody id="submission-list">
+                <tr>
+                    <td colspan="50" class="loader-container"> <div class="loader" role="status" aria-label="加载中"></div>
+                        <p>正在加载学生提交数据...</p>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+            <div id="no-submission-data" class="loader-container" style="display: none;">
+                <i class="fas fa-inbox text-4xl mb-2 text-gray-300" aria-hidden="true"></i>
+                <p>没有找到学生提交数据。</p>
+            </div>
+        </div>
+    </section>
+</div>
+
+<div id="correctionModal" class="modal">
+    <div class="modal-content">
+        <span class="close-button" onclick="closeCorrectionModal()">&times;</span>
+        <h2 class="text-xl font-bold mb-4">批改题目</h2>
+        <div class="modal-body">
+            <p class="mb-4"><strong id="modal-student-info"></strong></p>
+            <div class="mb-4">
+                <label>题目内容:</label>
+                <div id="modal-question-content" class="answer-display">加载中...</div>
+            </div>
+            <div class="mb-4">
+                <label>正确答案:</label>
+                <div id="modal-correct-answer" class="answer-display">加载中...</div>
+            </div>
+            <div class="mb-4">
+                <label>学生答案:</label>
+                <div id="modal-student-answer" class="answer-display">加载中...</div>
+            </div>
+            <div class="mb-4">
+                <label for="modal-grade">打分 (0 - <span id="modal-max-score"></span>):</label>
+                <input type="number" id="modal-grade" min="0" step="0.1">
+            </div>
+            <div class="mb-4">
+                <label for="modal-feedback">教师评语:</label>
+                <textarea id="modal-feedback" rows="4"></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="cancel-button" onclick="closeCorrectionModal()">取消</button>
+            <button class="save-button" onclick="saveCorrection()">保存批改</button>
+        </div>
+    </div>
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script>
+    let practiceId = null;
+    let questions = [];
+    let studentsData = [];
+
+    let currentGrading = {
+        studentId: null,
+        questionId: null,
+        submissionId: null,
+        maxScore: 0
+    };
+
+
+    $(document).ready(function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        practiceId = urlParams.get('practiceId');
+
+        if (!practiceId) {
+            showNotification("未指定练习ID，无法加载批改界面。", "error");
+            return;
+        }
+
+        loadPracticeGradingData(practiceId);
+    });
+
+    function loadPracticeGradingData(practiceId) {
+        $("#submission-list").html(`
+             <tr>
+                <td colspan="50" class="loader-container">
+                    <div class="loader" role="status" aria-label="加载中"></div>
+                    <p>正在加载学生提交数据...</p>
+                </td>
+            </tr>
+        `);
+
+        $("#no-submission-data").hide();
+
+        const apiUrl = `/Anotherview/api/teacher/practice/grading?practiceId=${practiceId}`;
+
+        $.ajax({
+            url: apiUrl,
+            type: 'GET',
+            dataType: 'json',
+            success: function(data) {
+                if (data && data.practice && data.students) {
+                    displayPracticeDetails(data.practice);
+                    questions = data.practice.questions || [];
+                    studentsData = data.students || [];
+
+                    renderSubmissionTable(studentsData, questions);
+                } else {
+                    showNotification("加载批改数据失败：数据格式错误。", "error");
+                    $("#submission-list").empty();
+                    $("#no-submission-data").show();
+                }
+            },
+            error: function(xhr, status, error) {
+                showNotification('加载批改数据失败: ' + (xhr.responseJSON ? xhr.responseJSON.message : xhr.responseText), "error");
+                $("#submission-list").empty();
+                $("#no-submission-data").show();
+            }
+        });
+    }
+
+    function displayPracticeDetails(practice) {
+        $("#practice-title").text(practice.title || 'N/A');
+        $("#lesson-name").text(practice.lessonName || 'N/A');
+        $("#class-names").text(practice.classNames ? practice.classNames.join(', ') : 'N/A');
+        $("#question-count").text(practice.questionNum || 0);
+        $("#end-time").text(practice.endAt ? formatDisplayDateTime(practice.endAt) : 'N/A');
+
+    }
+
+    function renderSubmissionTable(students, questions) {
+        const $submissionListTbody = $("#submission-list");
+        $submissionListTbody.empty();
+
+        const $tableHeadRow = $("#submission-table thead tr");
+        $tableHeadRow.find('th:gt(4)').remove();
+
+
+        questions.forEach((q, index) => {
+            $tableHeadRow.append(`<th class="py-3 px-6 text-center" scope="col">题目 ${index + 1}</th>`);
+        });
+
+
+        if (!students || students.length === 0) {
+            $("#no-submission-data").show();
+            return;
+        } else {
+            $("#no-submission-data").hide();
+        }
+
+        students.forEach((student, studentIndex) => {
+            let rowHtml = `
+                <tr class="border-b border-gray-200 hover:bg-blue-50">
+                    <td class="py-3 px-6 text-left">${student.className || 'N/A'}</td>
+                    <td class="py-3 px-6 text-left">${student.studentNumber || 'N/A'}</td>
+                    <td class="py-3 px-6 text-left font-semibold">${student.name || 'N/A'}</td>
+                    <td class="py-3 px-6 text-left">${student.completedQuestions || 0}/${questions.length}</td>
+                    <td class="py-3 px-6 text-left">${(student.obtainedScore || 0).toFixed(2)}/${(student.totalPracticeScore || 0).toFixed(2)}</td>
+            `;
+
+            questions.forEach((q) => {
+                const answerStatus = (student.answerStatuses && student.answerStatuses[q.id]) ? student.answerStatuses[q.id] : null;
+                let statusDisplay = { text: '未提交', class: 'status-not-submitted' };
+                let actionButton = '';
+
+
+                if (answerStatus) {
+                    if (q.type === 'essay') {
+                        const hasStudentAnswer = answerStatus.studentAnswer !== null && answerStatus.studentAnswer.trim() !== '';
+                        const isGraded = answerStatus.grade !== null;
+
+                        if (isGraded) {
+                            statusDisplay = { text: `已批改: ${answerStatus.grade.toFixed(2)}分`, class: 'status-graded' };
+                            if (hasStudentAnswer) {
+                                actionButton = `<button class="action-button ml-2" onclick="openCorrectionModal(${student.id}, ${q.id}, ${answerStatus.submissionId})">查看/修改</button>`;
+                            } else {
+                                actionButton = '';
+                            }
+                        } else {
+                            statusDisplay = { text: '待批改', class: 'status-pending' };
+                            if (hasStudentAnswer) {
+                                actionButton = `<button class="action-button ml-2" onclick="openCorrectionModal(${student.id}, ${q.id}, ${answerStatus.submissionId})">批改</button>`;
+                            } else {
+                                actionButton = '';
+                            }
+                        }
+
+                        if (!hasStudentAnswer) {
+                            statusDisplay = { text: '未提交', class: 'status-not-submitted' };
+                            actionButton = '';
+                        }
+
+
+                    } else {
+                        if (answerStatus.isCorrect === true) {
+                            statusDisplay = { text: '正确', class: 'status-completed' };
+                        } else if (answerStatus.isCorrect === false) {
+                            statusDisplay = { text: '错误', class: 'status-not-submitted' };
+                        } else {
+                            if (answerStatus.studentAnswer && answerStatus.studentAnswer.trim() !== '') {
+                                statusDisplay = { text: '已完成', class: 'status-completed' };
+                            } else {
+                                statusDisplay = { text: '未提交', class: 'status-not-submitted' };
+                            }
+                        }
+                        actionButton = '';
+                    }
+                } else {
+                }
+
+
+                rowHtml += `
+                    <td class="py-3 px-6 text-center whitespace-nowrap">
+                        <span class="status-badge ${statusDisplay.class}">${statusDisplay.text}</span>
+                        ${actionButton}
+                    </td>
+                `;
+            });
+
+            rowHtml += `</tr>`;
+            $submissionListTbody.append(rowHtml);
+        });
+
+        const totalCols = 5 + questions.length;
+        $("#submission-table tbody td[colspan]").attr('colspan', totalCols);
+
+    }
+
+
+    function openCorrectionModal(studentId, questionId, submissionId) {
+        const student = studentsData.find(s => s.id === studentId);
+        const question = questions.find(q => q.id === questionId);
+        const answerStatus = student && student.answerStatuses ? student.answerStatuses[questionId] : null;
+
+        if (!student || !question || !answerStatus) {
+            showNotification("无法加载批改数据。", "error");
+            return;
+        }
+
+        currentGrading = {
+            studentId: studentId,
+            questionId: questionId,
+            submissionId: submissionId,
+            maxScore: question.score || 0
+        };
+
+        $("#modal-student-info").text(`学生: ${student.name} (${student.studentNumber}) - 班级: ${student.className}`);
+        $("#modal-question-content").text(question.content || '无内容');
+        $("#modal-correct-answer").text(question.correctAnswer || '无正确答案');
+        $("#modal-student-answer").text(answerStatus.studentAnswer || '未提交');
+        $("#modal-max-score").text(currentGrading.maxScore);
+        $("#modal-grade").val(answerStatus.grade !== null ? answerStatus.grade : '');
+        $("#modal-grade").attr('max', currentGrading.maxScore);
+        $("#modal-feedback").val(answerStatus.feedback || '');
+
+
+        $("#correctionModal").addClass("is-visible");
+    }
+
+    function closeCorrectionModal() {
+        $("#correctionModal").removeClass("is-visible");
+        $("#modal-student-info").text('');
+        $("#modal-question-content").text('');
+        $("#modal-correct-answer").text('');
+        $("#modal-student-answer").text('');
+        $("#modal-max-score").text('');
+        $("#modal-grade").val('');
+        $("#modal-feedback").val('');
+
+        currentGrading = { studentId: null, questionId: null, submissionId: null, maxScore: 0 };
+    }
+
+    function saveCorrection() {
+        const grade = parseFloat($("#modal-grade").val());
+        const feedback = $("#modal-feedback").val();
+
+        if (isNaN(grade) || grade < 0 || grade > currentGrading.maxScore) {
+            showNotification(`请输入有效的得分 (0 - ${currentGrading.maxScore})`, "warning");
+            return;
+        }
+
+        if (currentGrading.studentId === null || currentGrading.questionId === null || currentGrading.submissionId === null) {
+            showNotification("批改信息不完整，无法保存。", "error");
+            return;
+        }
+
+        const correctionData = {
+            submissionId: currentGrading.submissionId,
+            questionId: currentGrading.questionId,
+            grade: grade,
+            feedback: feedback
+        };
+
+        $.ajax({
+            url: '/Anotherview/api/teacher/practice/grade',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(correctionData),
+            success: function(response) {
+                showNotification("批改已保存。", "success");
+                closeCorrectionModal();
+                loadPracticeGradingData(practiceId);
+            },
+            error: function(xhr, status, error) {
+                showNotification('保存批改失败: ' + (xhr.responseJSON ? xhr.responseJSON.message : xhr.responseText), "error");
+            }
+        });
+    }
+
+
+    $(window).on('click', function(event) {
+        const modal = $("#correctionModal")[0];
+        if (event.target === modal) {
+            closeCorrectionModal();
+        }
+    });
+
+
+    function showNotification(message, type = 'info') {
+        const existingNotification = document.getElementById('custom-notification');
+        if (existingNotification) {
+            existingNotification.remove();
+        }
+
+        let icon, bgColor, textColor;
+        switch (type) {
+            case 'success':
+                icon = 'fas fa-check-circle';
+                bgColor = 'bg-green-500';
+                textColor = 'text-white';
+                break;
+            case 'error':
+                icon = 'fas fa-exclamation-circle';
+                bgColor = 'bg-red-500';
+                textColor = 'text-white';
+                break;
+            case 'warning':
+                icon = 'fas fa-exclamation-triangle';
+                bgColor = 'bg-yellow-500';
+                textColor = 'text-white';
+                break;
+            default:
+                icon = 'fas fa-info-circle';
+                bgColor = 'bg-blue-500';
+                textColor = 'text-white';
+        }
+
+        const notification = document.createElement('div');
+        notification.id = 'custom-notification';
+        notification.className = `fixed top-4 right-4 ${bgColor} ${textColor} px-6 py-3 rounded-lg shadow-lg z-50 flex items-center animate__animated animate__fadeInRight`;
+        notification.setAttribute('role', 'status');
+        notification.setAttribute('aria-live', 'polite');
+        notification.innerHTML = `
+            <i class="${icon} mr-2" aria-hidden="true"></i>
+            <span>${message}</span>
+        `;
+
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.classList.remove('animate__fadeInRight');
+            notification.classList.add('animate__fadeOutRight');
+            setTimeout(() => {
+                notification.remove();
+            }, 500);
+        }, 3000);
+    }
+
+    function formatDisplayDateTime(dateTimeStr) {
+        if (!dateTimeStr) return "";
+        try {
+            const date = new Date(dateTimeStr);
+            if (isNaN(date.getTime())) return dateTimeStr;
+
+            const year = date.getFullYear();
+            const month = ('0' + (date.getMonth() + 1)).slice(-2);
+            const day = ('0' + date.getDate()).slice(-2);
+            const hours = ('0' + date.getHours()).slice(-2);
+            const minutes = ('0' + date.getMinutes()).slice(-2);
+            return `${year}-${month}-${day} ${hours}:${minutes}`;
+        } catch (e) {
+            return dateTimeStr;
+        }
+    }
+
+</script>
+
+</body>
+</html>
