@@ -74,7 +74,7 @@
             border: none;
             position: relative;
             overflow: hidden;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
             background-color: rgba(255, 255, 255, 0.2);
             color: white;
             backdrop-filter: blur(5px);
@@ -447,7 +447,7 @@
     let hasPreviousSubmission = false;
 
     $(function () {
-        $.get(`/Anotherview/api/student/practiceDetails?practice_id=${practiceId}`, function (practice) {
+        $.get(`/Anotherview/api/student/practiceDetails?practice_id=${practiceId}${mode ? '&mode=' + mode : ''}`, function (practice) {
             $('#practiceTitle').append(`: ${escapeHtml(practice.title || '无标题')}`);
             const endTimeText = practice.endAt ? new Date(practice.endAt).toLocaleString() : '未设定';
             $('#endTime').text(endTimeText);
@@ -473,7 +473,7 @@
 
     function loadQuestions(pId) {
         $("#loading-message").show();
-        $.get(`/Anotherview/api/student/questions?practice_id=${pId}`, function (questions) {
+        $.get(`/Anotherview/api/student/questions?practice_id=${pId}${mode ? '&mode=' + mode : ''}`, function (questions) {
             globalQuestions = questions;
             renderQuestions(questions);
             if (questions.length > 0) {
@@ -558,7 +558,7 @@
     }
 
     function loadPreviousAnswers(pId) {
-        $.get(`/Anotherview/api/student/previous-answers?practice_id=${pId}`, function (submission) {
+        $.get(`/Anotherview/api/student/previous-answers?practice_id=${pId}${mode ? '&mode=' + mode : ''}`, function (submission) {
             if (submission && submission.answers && Array.isArray(submission.answers) && submission.answers.length > 0) {
                 hasPreviousSubmission = true;
                 submission.answers.forEach(subAnswer => {
