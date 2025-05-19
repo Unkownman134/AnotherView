@@ -147,4 +147,54 @@ public class StudentDao {
         }
         return lessons;
     }
+
+    /**
+     * 根据班级ID列表获取学生列表
+     * @param classIds 班级ID列表
+     * @return 学生实体列表
+     */
+    public List<StudentEntity> getStudentsByClassIds(List<Integer> classIds) {
+        List<StudentEntity> students = new ArrayList<>();
+        if (classIds == null || classIds.isEmpty()) {
+            return students;
+        }
+
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        try {
+            conn = DBUtils.getConnection();
+            String sql = "SELECT s.student_id, s.student_number, s.name, s.classof " +
+                    "FROM student s JOIN class c ON s.classof = c.name " +
+                    "WHERE c.class_id IN (";
+            for (int i = 0; i < classIds.size(); i++) {
+                sql += "?";
+                if (i < classIds.size() - 1) {
+                    sql += ",";
+                }
+            }
+            sql += ")";
+
+            pstmt = conn.prepareStatement(sql);
+            for (int i = 0; i < classIds.size(); i++) {
+                pstmt.setInt(i + 1, classIds.get(i));
+            }
+
+            rs = pstmt.executeQuery();
+            while (rs.next()) {
+                StudentEntity student = new StudentEntity();
+                student.setId(rs.getInt("student_id"));
+                student.setStudentNumber(rs.getString("student_number"));
+                student.setName(rs.getString("name"));
+                student.setClassof(rs.getString("classof"));
+                students.add(student);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            DBUtils.close(conn, pstmt, rs);
+        }
+        return students;
+    }
 }
