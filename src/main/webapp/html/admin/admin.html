@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员工作台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link rel="icon" href="/Anotherview/favicon.ico" type="image/x-icon"/>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            transition: background-color 0.3s ease;
+            overflow-x: hidden;
+        }
+
+        .transition-all {
+            transition: all 0.3s ease-in-out;
+        }
+
+        .sidebar-button.active {
+            background: linear-gradient(90deg, #1e3a8a 0%, #1e40af 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(30, 64, 175, 0.3);
+        }
+
+        .card {
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .loader {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #3b82f6;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .sidebar {
+            position: relative;
+            transition: width 0.3s ease;
+            overflow: hidden;
+        }
+
+        .sidebar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 3px;
+            height: 100%;
+            background: linear-gradient(to bottom, transparent, rgba(59, 130, 246, 0.5), transparent);
+            animation: sidebar-glow 3s infinite;
+        }
+
+        @keyframes sidebar-glow {
+            0% {
+                opacity: 0.3;
+            }
+            50% {
+                opacity: 0.7;
+            }
+            100% {
+                opacity: 0.3;
+            }
+        }
+
+        #personal-info-content .info-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px dashed #e5e7eb;
+        }
+
+        #personal-info-content .info-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+            margin-bottom: 0;
+        }
+
+        #personal-info-content .info-item i {
+            margin-right: 10px;
+            color: #3b82f6;
+            font-size: 1.1rem;
+        }
+
+        #personal-info-content strong {
+            color: #1f2937;
+            margin-right: 8px;
+        }
+
+        tbody tr {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        tbody tr.fade-in {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        tbody tr:hover {
+            transform: translateX(5px);
+            box-shadow: -5px 0 0 #3b82f6;
+        }
+
+        .status-active {
+            color: #22c55e;
+            text-shadow: 0 0 10px rgba(34, 197, 94, 0.3);
+        }
+
+        .status-inactive {
+            color: #ef4444;
+            text-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+        }
+
+        .status-archived {
+            color: #6b7280;
+            text-shadow: 0 0 10px rgba(107, 114, 128, 0.3);
+        }
+
+        .status-easy {
+            color: #22c55e;
+            text-shadow: 0 0 10px rgba(34, 197, 94, 0.3);
+        }
+
+        .status-medium {
+            color: #f59e0b;
+            text-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+        }
+
+        .status-hard {
+            color: #ef4444;
+            text-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+        }
+
+        .badge {
+            position: relative;
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans leading-normal tracking-normal">
+
+<header class="bg-white p-4 shadow-lg flex justify-between items-center animate__animated animate__fadeIn">
+    <div class="flex items-center">
+        <i class="fas fa-user-shield text-blue-600 text-2xl mr-3" aria-hidden="true"></i>
+        <h1 class="text-xl font-bold text-gray-800">管理员工作台</h1>
+    </div>
+    <div class="user-info text-gray-600 flex items-center" role="region" aria-label="用户信息">
+        <i class="fas fa-user-circle text-blue-500 mr-2" aria-hidden="true"></i>
+        欢迎, <span id="username" class="font-semibold mx-1">加载中...</span> |
+        <a href="#" onclick="logout()" class="text-blue-600 hover:text-blue-800 ml-2 transition-all flex items-center"
+           role="button">
+            <span>退出登录</span>
+            <i class="fas fa-sign-out-alt ml-1" aria-hidden="true"></i>
+        </a>
+    </div>
+</header>
+
+<div class="flex min-h-screen">
+    <aside class="sidebar w-56 bg-gray-800 text-white p-4" role="navigation"
+           aria-label="主导航">
+        <div class="sidebar-item mb-6">
+            <button class="sidebar-button w-full text-left py-3 px-4 rounded-md transition duration-300 ease-in-out active flex items-center"
+                    onclick="navigateTo('dashboard')" aria-current="page">
+                <i class="fas fa-tachometer-alt mr-3" aria-hidden="true"></i>
+                <span>仪表盘</span>
+            </button>
+        </div>
+        <div class="sidebar-item mb-6">
+            <button class="sidebar-button w-full text-left py-3 px-4 rounded-md transition duration-300 ease-in-out flex items-center"
+                    onclick="navigateTo('class-management')" aria-current="false">
+                <i class="fas fa-chalkboard mr-3" aria-hidden="true"></i>
+                <span>班级管理</span>
+            </button>
+        </div>
+        <div class="sidebar-item mb-6">
+            <button class="sidebar-button w-full text-left py-3 px-4 rounded-md transition duration-300 ease-in-out flex items-center"
+                    onclick="navigateTo('teacher-management')" aria-current="false">
+                <i class="fas fa-chalkboard-teacher mr-3" aria-hidden="true"></i>
+                <span>教师管理</span>
+            </button>
+        </div>
+        <div class="sidebar-item mb-6">
+            <button class="sidebar-button w-full text-left py-3 px-4 rounded-md transition duration-300 ease-in-out flex items-center"
+                    onclick="navigateTo('course-management')" aria-current="false">
+                <i class="fas fa-book mr-3" aria-hidden="true"></i>
+                <span>课程管理</span>
+            </button>
+        </div>
+        <div class="sidebar-item mb-6">
+            <button class="sidebar-button w-full text-left py-3 px-4 rounded-md transition duration-300 ease-in-out flex items-center"
+                    onclick="navigateTo('student-management')" aria-current="false">
+                <i class="fas fa-user-graduate mr-3" aria-hidden="true"></i>
+                <span>学生管理</span>
+            </button>
+        </div>
+        <div class="sidebar-item mb-6">
+            <button class="sidebar-button w-full text-left py-3 px-4 rounded-md transition duration-300 ease-in-out flex items-center"
+                    onclick="navigateTo('question-management')" aria-current="false">
+                <i class="fas fa-question-circle mr-3" aria-hidden="true"></i>
+                <span>题目管理</span>
+            </button>
+        </div>
+        <div class="sidebar-item mb-6">
+            <button class="sidebar-button w-full text-left py-3 px-4 rounded-md transition duration-300 ease-in-out flex items-center"
+                    onclick="navigateTo('semester-management')" aria-current="false">
+                <i class="fas fa-calendar-alt mr-3" aria-hidden="true"></i>
+                <span>学期管理</span>
+            </button>
+        </div>
+        <div class="sidebar-item mb-6">
+            <button class="sidebar-button w-full text-left py-3 px-4 rounded-md transition duration-300 ease-in-out flex items-center"
+                    onclick="navigateTo('profile')" aria-current="false">
+                <i class="fas fa-user mr-3" aria-hidden="true"></i>
+                <span>个人信息</span>
+            </button>
+        </div>
+    </aside>
+
+    <main class="content flex-1 p-6 bg-gray-50 animate__animated animate__fadeIn" role="main">
+        <section id="dashboard-section" class="card bg-white p-6 rounded-lg shadow-md mb-6">
+            <h2 id="dashboard-heading"
+                class="text-2xl font-bold mb-6 text-gray-800 border-b pb-4 flex items-center">
+                <i class="fas fa-tachometer-alt text-blue-500 mr-3" aria-hidden="true"></i>
+                仪表盘
+            </h2>
+            <div class="text-center py-8 text-gray-500">
+                <p>欢迎来到管理员仪表盘！</p>
+                <p>您的姓名是：<span class="font-bold text-blue-600" id="dashboard-admin-name"></span></p>
+            </div>
+        </section>
+
+        <section id="class-management-section" class="card bg-white p-6 rounded-lg shadow-md mb-6"
+                 style="display: none;">
+            <h2 class="text-2xl font-bold mb-6 text-gray-800 border-b pb-4 flex items-center">
+                <i class="fas fa-chalkboard text-blue-500 mr-3" aria-hidden="true"></i>
+                <span>班级管理</span>
+            </h2>
+            <div class="text-center py-8 text-gray-500">
+                <p>班级管理内容将在此处显示。</p>
+            </div>
+        </section>
+
+        <section id="teacher-management-section" class="card bg-white p-6 rounded-lg shadow-md mb-6"
+                 style="display: none;">
+            <h2 class="text-2xl font-bold mb-6 text-gray-800 border-b pb-4 flex items-center">
+                <i class="fas fa-chalkboard-teacher text-blue-500 mr-3" aria-hidden="true"></i>
+                <span>教师管理</span>
+            </h2>
+            <div class="text-center py-8 text-gray-500">
+                <p>教师管理内容将在此处显示。</p>
+            </div>
+        </section>
+
+        <section id="course-management-section" class="card bg-white p-6 rounded-lg shadow-md mb-6"
+                 style="display: none;">
+            <h2 class="text-2xl font-bold mb-6 text-gray-800 border-b pb-4 flex items-center">
+                <i class="fas fa-book text-blue-500 mr-3" aria-hidden="true"></i>
+                <span>课程管理</span>
+            </h2>
+            <div class="text-center py-8 text-gray-500">
+                <p>课程管理内容将在此处显示。</p>
+            </div>
+        </section>
+
+        <section id="student-management-section" class="card bg-white p-6 rounded-lg shadow-md mb-6"
+                 style="display: none;">
+            <h2 class="text-2xl font-bold mb-6 text-gray-800 border-b pb-4 flex items-center">
+                <i class="fas fa-user-graduate text-blue-500 mr-3" aria-hidden="true"></i>
+                <span>学生管理</span>
+            </h2>
+            <div class="text-center py-8 text-gray-500">
+                <p>学生管理内容将在此处显示。</p>
+            </div>
+        </section>
+
+        <section id="question-management-section" class="card bg-white p-6 rounded-lg shadow-md mb-6"
+                 style="display: none;">
+            <h2 class="text-2xl font-bold mb-6 text-gray-800 border-b pb-4 flex items-center">
+                <i class="fas fa-question-circle text-blue-500 mr-3" aria-hidden="true"></i>
+                <span>题目管理</span>
+            </h2>
+            <div class="controls mb-6 flex flex-col sm:flex-row sm:items-end gap-4">
+                <div class="flex flex-col flex-grow">
+                    <label for="question-type-filter"
+                           class="block text-gray-700 text-sm font-bold mb-1 flex items-center">
+                        <i class="fas fa-filter text-blue-500 mr-2" aria-hidden="true"></i>
+                        筛选类型:
+                    </label>
+                    <select id="question-type-filter"
+                            class="shadow appearance-none border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                        <option value="all">所有类型</option>
+                        <option value="single_choice">单选题</option>
+                        <option value="multiple_choice">多选题</option>
+                        <option value="fill_blank">填空题</option>
+                        <option value="essay">问答题</option>
+                    </select>
+                </div>
+
+                <div class="flex flex-col flex-grow">
+                    <label for="question-difficulty-filter"
+                           class="block text-gray-700 text-sm font-bold mb-1 flex items-center">
+                        <i class="fas fa-filter text-blue-500 mr-2" aria-hidden="true"></i>
+                        筛选难度:
+                    </label>
+                    <select id="question-difficulty-filter"
+                            class="shadow appearance-none border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                        <option value="all">所有难度</option>
+                        <option value="easy">简单</option>
+                        <option value="medium">中等</option>
+                        <option value="hard">困难</option>
+                    </select>
+                </div>
+
+                <div class="flex flex-col flex-grow">
+                    <label for="lesson-id-filter" class="block text-gray-700 text-sm font-bold mb-1 flex items-center">
+                        <i class="fas fa-filter text-blue-500 mr-2" aria-hidden="true"></i>
+                        筛选课程ID:
+                    </label>
+                    <input type="number" id="lesson-id-filter"
+                           placeholder="输入课程ID"
+                           class="shadow appearance-none border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                           aria-label="筛选课程ID">
+                </div>
+
+                <div class="flex items-end flex-grow relative">
+                    <i class="fas fa-search absolute left-3 bottom-2 text-gray-400" aria-hidden="true"></i>
+                    <label for="question-search-input" class="sr-only">搜索题目</label>
+                    <input type="text" id="question-search-input"
+                           placeholder="搜索题干内容..."
+                           class="shadow appearance-none border rounded-lg flex-grow py-2 pl-10 pr-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                           aria-label="搜索题目内容">
+                    <button onclick="loadQuestions()"
+                            class="btn ml-2 bg-blue-500 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all flex items-center justify-center h-auto"
+                            aria-label="搜索">
+                        <i class="fas fa-search mr-1" aria-hidden="true"></i>搜索
+                    </button>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto rounded-lg border border-gray-200 shadow-sm" role="region"
+                 aria-labelledby="question-list-heading">
+                <h3 id="question-list-heading" class="sr-only">题目列表</h3>
+                <table class="min-w-full bg-white">
+                    <thead>
+                    <tr class="bg-gradient-to-r from-blue-50 to-blue-100 text-gray-600 uppercase text-sm leading-normal">
+                        <th class="py-3 px-6 text-left" scope="col">题目ID</th>
+                        <th class="py-3 px-6 text-left" scope="col">课程ID</th>
+                        <th class="py-3 px-6 text-left" scope="col">题干内容</th>
+                        <th class="py-3 px-6 text-left" scope="col">类型</th>
+                        <th class="py-3 px-6 text-left" scope="col">难度</th>
+                        <th class="py-3 px-6 text-left" scope="col">分值</th>
+                    </tr>
+                    </thead>
+                    <tbody id="question-list" class="text-gray-600 text-sm">
+                    </tbody>
+                </table>
+                <div id="loading-questions-message" class="text-center py-8 text-gray-500" style="display: none;"
+                     aria-live="polite">
+                    <div class="loader mb-3" role="status" aria-label="加载中"></div>
+                    <p>正在加载题目数据...</p>
+                </div>
+                <div id="no-questions-data-message" class="text-center py-8 text-gray-500" style="display: none;"
+                     aria-live="polite">
+                    <i class="fas fa-search text-4xl mb-2 text-gray-300" aria-hidden="true"></i>
+                    <p>没有找到匹配的题目。</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="semester-management-section" class="card bg-white p-6 rounded-lg shadow-md mb-6"
+                 style="display: none;">
+            <h2 class="text-2xl font-bold mb-6 text-gray-800 border-b pb-4 flex items-center">
+                <i class="fas fa-calendar-alt text-blue-500 mr-3" aria-hidden="true"></i>
+                <span>学期管理</span>
+            </h2>
+            <div class="text-center py-8 text-gray-500">
+                <p>学期管理内容将在此处显示。</p>
+            </div>
+        </section>
+
+        <section id="personal-info-section" class="card bg-white p-6 rounded-lg shadow-md mb-6" style="display: none;">
+            <h2 id="personal-info-heading"
+                class="text-2xl font-bold mb-6 text-gray-800 border-b pb-4 flex items-center">
+                <i class="fas fa-user text-blue-500 mr-3" aria-hidden="true"></i>
+                <span>个人信息</span>
+            </h2>
+            <div id="personal-info-content" class="text-gray-700">
+                <div class="loader mb-3" role="status" aria-label="加载中"></div>
+                <p class="text-center">正在加载个人信息...</p>
+            </div>
+        </section>
+    </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script>
+    $(document).ready(function () {
+        animateEntranceSequence();
+
+        $.get("/Anotherview/api/adminInfo", function (response) {
+            if (response.success && response.admin) {
+                const admin = response.admin;
+                $("#username").text(admin.name);
+                $("#dashboard-admin-name").text(admin.name);
+                showNotification("管理员信息加载成功！", "success");
+                navigateTo('dashboard'); // Default to dashboard
+            } else {
+                showNotification("无法获取管理员信息，请重新登录", "error");
+                setTimeout(() => {
+                    window.location.href = "/Anotherview/html/admin/admin-login.html";
+                }, 2000);
+            }
+        }).fail((xhr) => {
+            const errorMessage = xhr.responseJSON ? xhr.responseJSON.message : xhr.responseText || "未知错误";
+            showNotification("无法获取管理员信息: " + errorMessage + "，请重新登录", "error");
+            setTimeout(() => {
+                window.location.href = "/Anotherview/html/admin/admin-login.html";
+            }, 2000);
+        });
+
+        $("#question-type-filter, #question-difficulty-filter").on('change', function () {
+            loadQuestions();
+        });
+
+        $("#question-search-input").on('input', function () {
+            clearTimeout(this.searchTimer);
+            this.searchTimer = setTimeout(() => {
+                loadQuestions();
+            }, 300);
+        });
+        $("#lesson-id-filter").on('input', function () {
+            clearTimeout(this.lessonIdTimer);
+            this.lessonIdTimer = setTimeout(() => {
+                loadQuestions();
+            }, 300);
+        });
+
+        $(".sidebar-button").removeClass("active").attr("aria-current", "false");
+        $('.sidebar-button').each(function () {
+            if ($(this).attr('onclick').includes("navigateTo('dashboard')")) {
+                $(this).addClass('active').attr("aria-current", "page");
+            }
+        });
+    });
+
+    function animateEntranceSequence() {
+        document.getElementById('dashboard-section').classList.add('animate__animated', 'animate__fadeIn');
+    }
+
+    function logout() {
+        showNotification("正在退出登录...", "info");
+
+        $.post("/Anotherview/api/adminLogout", function () {
+            showNotification("已成功退出登录", "success");
+            setTimeout(() => {
+                window.location.href = "/Anotherview/html/admin/admin-login.html";
+            }, 1000);
+        }).fail(() => {
+            showNotification("退出失败，请重试", "error");
+        });
+    }
+
+    function navigateTo(page) {
+        $(".sidebar-button").removeClass("active").attr("aria-current", "false");
+
+        $("#dashboard-section").hide();
+        $("#class-management-section").hide();
+        $("#teacher-management-section").hide();
+        $("#course-management-section").hide();
+        $("#student-management-section").hide();
+        $("#question-management-section").hide();
+        $("#semester-management-section").hide();
+        $("#personal-info-section").hide();
+
+        $('.sidebar-button').each(function () {
+            if ($(this).attr('onclick').includes(`('${page}')`)) {
+                $(this).addClass('active').attr("aria-current", "page");
+            }
+        });
+
+        if (page === 'dashboard') {
+            $("#dashboard-section").show();
+            // Removed loadDashboardSummary() call
+        } else if (page === 'class-management') {
+            $("#class-management-section").show();
+        } else if (page === 'teacher-management') {
+            $("#teacher-management-section").show();
+        } else if (page === 'course-management') {
+            $("#course-management-section").show();
+        } else if (page === 'student-management') {
+            $("#student-management-section").show();
+        } else if (page === 'question-management') {
+            $("#question-management-section").show();
+            loadQuestions();
+        } else if (page === 'semester-management') {
+            $("#semester-management-section").show();
+        } else if (page === 'profile') {
+            $("#personal-info-section").show();
+            loadPersonalInfo();
+        }
+    }
+
+    function loadPersonalInfo() {
+        const $personalInfoContent = $("#personal-info-content");
+        $personalInfoContent.html(`
+            <div class="loader mb-3" role="status" aria-label="加载中"></div>
+            <p class="text-center">正在加载个人信息...</p>
+        `);
+
+        $.get("/Anotherview/api/adminInfo", function (response) {
+            $personalInfoContent.empty();
+            if (response.success && response.admin) {
+                const admin = response.admin;
+                $personalInfoContent.append(`
+                    <div class="info-item"><i class="fas fa-id-card" aria-hidden="true"></i><strong>管理员ID:</strong> ${admin.id || 'N/A'}</div>
+                    <div class="info-item"><i class="fas fa-user" aria-hidden="true"></i><strong>姓名:</strong> ${admin.name || 'N/A'}</div>
+                    <div class="info-item"><i class="fas fa-envelope" aria-hidden="true"></i><strong>邮箱:</strong> ${admin.email || 'N/A'}</div>
+                    <div class="info-item"><i class="fas fa-calendar-alt" aria-hidden="true"></i><strong>创建日期:</strong> ${admin.createdAt ? formatDisplayDateTime(admin.createdAt) : 'N/A'}</div>
+                    <div class="info-item"><i class="fas fa-clock" aria-hidden="true"></i><strong>上次登录:</strong> ${admin.lastLogin ? formatDisplayDateTime(admin.lastLogin) : 'N/A'}</div>
+                    `);
+            } else {
+                $personalInfoContent.html(`
+                    <i class="fas fa-exclamation-circle text-4xl mb-2 text-red-400" aria-hidden="true"></i>
+                    <p class="text-center">无法获取个人信息。</p>
+                 `);
+                showNotification("无法获取个人信息", "error");
+            }
+        }).fail((xhr, status, error) => {
+            console.error("加载个人信息失败:", error);
+            $personalInfoContent.html(`
+                <i class="fas fa-exclamation-circle text-4xl mb-2 text-red-400" aria-hidden="true"></i>
+                <p class="text-center">加载个人信息失败。</p>
+             `);
+            showNotification('加载个人信息失败: ' + (xhr.responseJSON ? xhr.responseJSON.message : xhr.responseText), "error");
+        });
+    }
+
+    function loadQuestions() {
+        $("#loading-questions-message").show();
+        $("#no-questions-data-message").hide();
+        $("#question-list").empty();
+
+        for (let i = 0; i < 5; i++) {
+            $("#question-list").append(`
+                <tr>
+                    <td colspan="6" class="py-4"> <div class="shimmer w-full h-10 rounded-md"></div>
+                    </td>
+                </tr>
+            `);
+        }
+
+        const typeFilter = $('#question-type-filter').val();
+        const difficultyFilter = $('#question-difficulty-filter').val();
+        const lessonIdFilter = $('#lesson-id-filter').val();
+        const searchTerm = $("#question-search-input").val().trim();
+
+        $.get("/Anotherview/api/adminInfo", {action: "getQuestions"}, function (response) {
+            $("#question-list").empty();
+            $("#loading-questions-message").hide();
+
+            if (response.success && response.questions && response.questions.length > 0) {
+                let filteredQuestions = response.questions.filter(question => {
+                    const matchesType = typeFilter === 'all' || question.type === typeFilter;
+                    const matchesDifficulty = difficultyFilter === 'all' || question.difficulty === difficultyFilter;
+                    const matchesSearch = searchTerm === '' ||
+                        question.content.includes(searchTerm);
+                    const matchesLessonId = lessonIdFilter === '' || parseInt(lessonIdFilter) === question.lessonId;
+                    return matchesType && matchesDifficulty && matchesSearch && matchesLessonId;
+                });
+                renderQuestions(filteredQuestions);
+            } else {
+                $("#no-questions-data-message").show();
+            }
+        }).fail((xhr, status, error) => {
+            $("#question-list").empty();
+            $("#loading-questions-message").hide();
+            $("#no-questions-data-message").show().find('p').text('加载题目数据失败。');
+            showNotification('加载题目数据失败: ' + (xhr.responseJSON ? xhr.responseJSON.message : xhr.responseText), "error");
+            console.error("Error loading questions:", error, xhr.responseText);
+        });
+    }
+
+    function renderQuestions(questions) {
+        const $questionListTbody = $("#question-list");
+        $questionListTbody.empty();
+
+        if (!questions || questions.length === 0) {
+            $("#no-questions-data-message").show();
+            return;
+        } else {
+            $("#no-questions-data-message").hide();
+        }
+
+        questions.forEach((question, index) => {
+            const typeDisplay = getQuestionTypeDisplay(question.type);
+            const difficultyDisplay = getDifficultyDisplay(question.difficulty);
+            const row = $(`
+                <tr class="border-b border-gray-200 hover:bg-blue-50" data-index="${index}">
+                    <td class="py-3 px-6 text-left font-semibold">${question.id || 'N\A'}</td>
+                    <td class="py-3 px-6 text-left">${question.lessonId || 'N\A'}</td>
+                    <td class="py-3 px-6 text-left max-w-xs overflow-hidden text-ellipsis whitespace-nowrap" title="${question.content}">${question.content || 'N\A'}</td>
+                    <td class="py-3 px-6 text-left">
+                        <span class="badge bg-blue-100 border border-blue-300 text-blue-800">${typeDisplay}</span>
+                    </td>
+                    <td class="py-3 px-6 text-left">
+                        <span class="badge bg-gray-100 border border-gray-300 ${difficultyDisplay.class}">${difficultyDisplay.text}</span>
+                    </td>
+                    <td class="py-3 px-6 text-left">${question.score || 'N\A'}</td>
+                </tr>
+            `);
+            $questionListTbody.append(row);
+            setTimeout(() => {
+                row.addClass('fade-in');
+            }, 50 * index);
+        });
+    }
+
+    function showNotification(message, type = 'info') {
+        const existingNotification = document.getElementById('custom-notification');
+        if (existingNotification) {
+            existingNotification.remove();
+        }
+
+        let icon, bgColor, textColor;
+        switch (type) {
+            case 'success':
+                icon = 'fas fa-check-circle';
+                bgColor = 'bg-green-500';
+                textColor = 'text-white';
+                break;
+            case 'error':
+                icon = 'fas fa-exclamation-circle';
+                bgColor = 'bg-red-500';
+                textColor = 'text-white';
+                break;
+            case 'warning':
+                icon = 'fas fa-exclamation-triangle';
+                bgColor = 'bg-yellow-500';
+                textColor = 'text-white';
+                break;
+            default:
+                icon = 'fas fa-info-circle';
+                bgColor = 'bg-blue-500';
+                textColor = 'text-white';
+        }
+
+        const notification = document.createElement('div');
+        notification.id = 'custom-notification';
+        notification.className = `fixed top-4 right-4 ${bgColor} ${textColor} px-6 py-3 rounded-lg shadow-lg z-50 flex items-center animate__animated animate__fadeInRight`;
+        notification.setAttribute('role', 'status');
+        notification.setAttribute('aria-live', 'polite');
+        notification.innerHTML = `
+            <i class="${icon} mr-2" aria-hidden="true"></i>
+            <span>${message}</span>
+        `;
+
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.classList.remove('animate__fadeInRight');
+            notification.classList.add('animate__fadeOutRight');
+            setTimeout(() => {
+                notification.remove();
+            }, 500);
+        }, 3000);
+    }
+
+    function formatDisplayDateTime(dateTimeStr) {
+        if (!dateTimeStr) return "";
+        try {
+            const date = new Date(dateTimeStr);
+            if (isNaN(date.getTime())) return dateTimeStr;
+
+            const year = date.getFullYear();
+            const month = ('0' + (date.getMonth() + 1)).slice(-2);
+            const day = ('0' + date.getDate()).slice(-2);
+            const hours = ('0' + date.getHours()).slice(-2);
+            const minutes = ('0' + date.getMinutes()).slice(-2);
+            return `${year}-${month}-${day} ${hours}:${minutes}`;
+        } catch (e) {
+            console.error("格式化日期失败:", dateTimeStr, e);
+            return dateTimeStr;
+        }
+    }
+
+    function getQuestionTypeDisplay(type) {
+        switch (type) {
+            case 'single_choice':
+                return '单选题';
+            case 'multiple_choice':
+                return '多选题';
+            case 'fill_blank':
+                return '填空题';
+            case 'essay':
+                return '问答题';
+            default:
+                return type || '未知';
+        }
+    }
+
+    function getDifficultyDisplay(difficulty) {
+        switch (difficulty) {
+            case 'easy':
+                return {text: '简单', class: 'status-easy'};
+            case 'medium':
+                return {text: '中等', class: 'status-medium'};
+            case 'hard':
+                return {text: '困难', class: 'status-hard'};
+            default:
+                return {text: difficulty || '未知', class: ''};
+        }
+    }
+</script>
+
+</body>
+</html>
