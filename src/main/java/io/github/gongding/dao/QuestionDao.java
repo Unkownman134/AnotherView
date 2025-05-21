@@ -215,4 +215,46 @@ public class QuestionDao {
         logger.debug("完成根据题目ID {} 查询单个题目详细信息操作。", questionId);
         return question;
     }
+
+    /**
+     * 获取所有题目信息
+     * @return 题目实体列表，包含所有题目
+     */
+    public List<QuestionEntity> getAllQuestions() {
+        logger.debug("尝试查询所有题目列表。");
+        List<QuestionEntity> questions = new ArrayList<>();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        try {
+            conn = DBUtils.getConnection();
+            String sql = "SELECT * FROM question";
+            logger.debug("执行 SQL: {}", sql);
+            pstmt = conn.prepareStatement(sql);
+            rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                QuestionEntity q = new QuestionEntity();
+                q.setId(rs.getInt("question_id"));
+                q.setLessonId(rs.getInt("lesson_id"));
+                q.setContent(rs.getString("content"));
+                q.setCorrectAnswer(rs.getString("correct_answer"));
+                q.setErrorAnswer(rs.getString("error_answer"));
+                q.setType(rs.getString("type"));
+                q.setDifficulty(rs.getString("difficulty"));
+                q.setScore(rs.getDouble("score"));
+                questions.add(q);
+                logger.trace("找到题目: ID = {}, Content = '{}'", q.getId(), q.getContent());
+            }
+            logger.debug("成功找到 {} 个题目。", questions.size());
+        } catch (SQLException e) {
+            logger.error("查询所有题目列表时发生数据库异常。", e);
+        } finally {
+            DBUtils.close(conn, pstmt, rs);
+            logger.debug("关闭数据库资源。");
+        }
+        logger.debug("完成查询所有题目列表操作。");
+        return questions;
+    }
 }
