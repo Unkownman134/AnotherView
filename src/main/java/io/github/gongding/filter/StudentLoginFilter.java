@@ -100,9 +100,10 @@ public class StudentLoginFilter implements Filter {
             chain.doFilter(req, resp);
             return;
         }
-        //排除教师相关的API请求，直接放行
-        if (uri.startsWith(contextPath + "/api/teacher") || uri.startsWith(contextPath + "/api/teacher/")) {
-            logger.debug("请求 URI {} 是教师相关的 API，直接放行。", uri);
+        //排除教师和管理员相关的API请求，直接放行
+        if (uri.startsWith(contextPath + "/api/admin") || uri.startsWith(contextPath + "/api/admin/") ||
+                uri.startsWith(contextPath + "/api/teacher") || uri.startsWith(contextPath + "/api/teacher/")) {
+            logger.debug("请求 URI {} 是教师和管理员相关的 API，直接放行。", uri);
             chain.doFilter(req, resp);
             return;
         }
