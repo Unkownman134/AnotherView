@@ -97,8 +97,9 @@ public class TeacherLoginFilter implements Filter {
             chain.doFilter(req, resp);
             return;
         }
-        if (uri.startsWith(contextPath + "/api/student")) {
-            logger.debug("请求 URI {} 是学生相关的 API，直接放行。", uri);
+        if (uri.startsWith(contextPath + "/api/admin") || uri.startsWith(contextPath + "/api/admin/") ||
+                uri.startsWith(contextPath + "/api/student") || uri.startsWith(contextPath + "/api/student/")) {
+            logger.debug("请求 URI {} 是学生和管理员相关的 API，直接放行。", uri);
             chain.doFilter(req, resp);
             return;
         }
