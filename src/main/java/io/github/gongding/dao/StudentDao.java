@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 public class StudentDao {
     private static final Logger logger = LoggerFactory.getLogger(StudentDao.class);
+    private static final ClassDao classDao = new ClassDao();
 
     /**
      * 根据学号查询学生信息
@@ -80,36 +81,70 @@ public class StudentDao {
     public boolean addStudent(StudentEntity student) {
         logger.info("尝试添加学生信息，学号: {}", student.getStudentNumber());
         Connection conn = null;
-        PreparedStatement pstmt = null;
+        PreparedStatement pstmtStudent = null;
+        PreparedStatement pstmtClassStudent = null;
+        ResultSet rs = null;
         boolean success = false;
 
         try {
             conn = DBUtils.getConnection();
-            String sql = "INSERT INTO student (student_number, name, email, school, classof, password_salt, password_hash) VALUES(?,?,?,?,?,?,?)";
-            logger.debug("执行 SQL (添加学生): {} with studentNumber = {}", sql, student.getStudentNumber());
-            pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, student.getStudentNumber());
-            pstmt.setString(2, student.getName());
-            pstmt.setString(3, student.getEmail());
-            pstmt.setString(4, student.getSchool());
-            pstmt.setString(5, student.getClassof());
-            pstmt.setString(6, student.getPasswordSalt());
-            pstmt.setString(7, student.getPasswordHash());
 
-            int affectedRows = pstmt.executeUpdate();
-            success = affectedRows > 0;
+            String sqlStudent = "INSERT INTO student (student_number, name, email, school, classof, password_salt, password_hash) VALUES(?,?,?,?,?,?,?)";
+            logger.debug("执行 SQL (添加学生): {} with studentNumber = {}", sqlStudent, student.getStudentNumber());
+            pstmtStudent = conn.prepareStatement(sqlStudent, Statement.RETURN_GENERATED_KEYS);
+            pstmtStudent.setString(1, student.getStudentNumber());
+            pstmtStudent.setString(2, student.getName());
+            pstmtStudent.setString(3, student.getEmail());
+            pstmtStudent.setString(4, student.getSchool());
+            pstmtStudent.setString(5, student.getClassof());
+            pstmtStudent.setString(6, student.getPasswordSalt());
+            pstmtStudent.setString(7, student.getPasswordHash());
+
+            int affectedRows = pstmtStudent.executeUpdate();
+            if (affectedRows == 0) {
+                logger.warn("添加学生信息失败，学号: {}，数据库操作未成功。", student.getStudentNumber());
+                return false;
+            }
             logger.debug("添加学生信息影响行数: {}", affectedRows);
 
-            if (success) {
-                logger.info("成功添加学生信息，学号: {}", student.getStudentNumber());
+            int studentId = -1;
+            rs = pstmtStudent.getGeneratedKeys();
+            if (rs.next()) {
+                studentId = rs.getInt(1);
+                logger.debug("获取到新学生的 student_id: {}", studentId);
             } else {
-                logger.warn("添加学生信息失败，学号: {}，可能数据库操作未成功。", student.getStudentNumber());
+                logger.error("未能获取新学生的 student_id，学号: {}", student.getStudentNumber());
+                return false;
             }
 
+            int classId = classDao.getClassIdByClassName(student.getClassof());
+            if (classId == -1) {
+                logger.warn("未找到班级名称 {} 对应的班级ID，无法关联学生和班级。", student.getClassof());
+                return false;
+            }
+            logger.debug("找到班级名称 {} 对应的 class_id: {}", student.getClassof(), classId);
+
+            String sqlClassStudent = "INSERT INTO class_student (student_id, class_id) VALUES (?, ?)";
+            logger.debug("执行 SQL (添加班级学生关联): {} with student_id = {}, class_id = {}", sqlClassStudent, studentId, classId);
+            pstmtClassStudent = conn.prepareStatement(sqlClassStudent);
+            pstmtClassStudent.setInt(1, studentId);
+            pstmtClassStudent.setInt(2, classId);
+
+            affectedRows = pstmtClassStudent.executeUpdate();
+            if (affectedRows == 0) {
+                logger.warn("添加学生与班级关联失败，学生ID: {}, 班级ID: {}", studentId, classId);
+                return false;
+            }
+            logger.debug("添加学生与班级关联影响行数: {}", affectedRows);
+
+            success = true;
+            logger.info("成功添加学生信息并关联班级，学号: {}", student.getStudentNumber());
+
         } catch (SQLException e) {
-            logger.error("添加学生信息时发生数据库异常，学号: {}", student.getStudentNumber(), e);
+            logger.error("添加学生信息或关联班级时发生数据库异常，学号: {}", student.getStudentNumber(), e);
         } finally {
-            DBUtils.close(conn, pstmt);
+            DBUtils.close(null, pstmtStudent, rs);
+            DBUtils.close(conn, pstmtClassStudent);
             logger.debug("关闭数据库资源。");
         }
         logger.debug("完成添加学生信息操作，学号: {}，结果: {}", student.getStudentNumber(), success ? "成功" : "失败");
