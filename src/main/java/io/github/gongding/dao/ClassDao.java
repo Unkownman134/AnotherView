@@ -131,4 +131,39 @@ public class ClassDao {
         logger.debug("完成根据练习ID {} 获取关联班级列表操作。", practiceId);
         return classes;
     }
+
+    /**
+     * 根据班级名称查询班级ID。
+     *
+     * @param className 班级名称。
+     * @return 班级ID，如果找到则返回对应的ID，如果未找到则返回-1。
+     */
+    public int getClassIdByClassName(String className) {
+        logger.debug("尝试根据班级名称 {} 查询班级ID。", className);
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        int classId = -1;
+        String sql = "SELECT class_id FROM class WHERE name = ?";
+
+        try {
+            conn = DBUtils.getConnection();
+            logger.debug("执行 SQL (查询班级ID): {} with className = {}", sql, className);
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, className);
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
+                classId = rs.getInt("class_id");
+                logger.debug("成功找到班级名称 {} 对应的班级ID: {}", className, classId);
+            } else {
+                logger.warn("未找到班级名称 {} 对应的班级ID。", className);
+            }
+        } catch (SQLException e) {
+            logger.error("根据班级名称 {} 查询班级ID时发生数据库异常。", className, e);
+        } finally {
+            DBUtils.close(conn, pstmt, rs);
+            logger.debug("关闭数据库资源。");
+        }
+        return classId;
+    }
 }
