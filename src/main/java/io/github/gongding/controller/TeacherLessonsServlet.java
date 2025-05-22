@@ -1,6 +1,8 @@
 package io.github.gongding.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.github.gongding.dao.LessonDao;
 import io.github.gongding.entity.LessonEntity;
 import io.github.gongding.entity.TeacherEntity;
@@ -23,6 +25,13 @@ public class TeacherLessonsServlet extends HttpServlet {
 
     private final LessonDao lessonDao = new LessonDao();
     private final ObjectMapper mapper = new ObjectMapper();
+
+    public TeacherLessonsServlet() {
+        logger.debug("TeacherLessonsServlet 构造方法执行。");
+        mapper.registerModule(new JavaTimeModule());
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        logger.debug("ObjectMapper 配置完成。");
+    }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
