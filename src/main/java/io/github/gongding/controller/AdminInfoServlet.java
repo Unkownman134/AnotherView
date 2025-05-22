@@ -5,11 +5,13 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.github.gongding.entity.AdminEntity;
 import io.github.gongding.entity.ClassEntity;
+import io.github.gongding.entity.LessonEntity;
 import io.github.gongding.entity.QuestionEntity;
 import io.github.gongding.entity.SemesterEntity;
 import io.github.gongding.entity.StudentEntity;
 import io.github.gongding.entity.TeacherEntity;
 import io.github.gongding.service.ClassService;
+import io.github.gongding.service.LessonService;
 import io.github.gongding.service.QuestionService;
 import io.github.gongding.service.SemesterService;
 import io.github.gongding.service.StudentService;
@@ -40,6 +42,7 @@ public class AdminInfoServlet extends HttpServlet {
     private final ClassService classService = new ClassService();
     private final SemesterService semesterService = new SemesterService();
     private final StudentService studentService = new StudentService();
+    private final LessonService lessonService = new LessonService();
 
     public AdminInfoServlet() {
         logger.debug("AdminInfoServlet 构造方法执行。");
@@ -68,9 +71,24 @@ public class AdminInfoServlet extends HttpServlet {
             mapper.writeValue(response.getWriter(), responseMap);
             return;
         }
-        logger.debug("管理员已登录，从 Session 获取管理员信息。");
 
-        if ("getQuestions".equals(action)) {
+        AdminEntity currentAdmin = (AdminEntity) session.getAttribute("admin");
+        responseMap.put("admin", currentAdmin);
+
+        logger.debug("管理员已登录，从 Session 获取管理员信息。Admin ID: {}, Name: {}", currentAdmin.getId(), currentAdmin.getName());
+
+        if ("getAdminInfo".equals(action) || action == null || action.isEmpty()) {
+            try {
+                responseMap.put("success", true);
+                responseMap.put("message", "管理员信息加载成功。");
+                logger.debug("成功获取管理员的最新信息，返回给客户端。");
+            } catch (Exception e) {
+                logger.error("获取管理员信息或处理响应时发生异常。", e);
+                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                responseMap.put("success", false);
+                responseMap.put("message", "获取管理员信息时发生内部错误。");
+            }
+        } else if ("getQuestions".equals(action)) {
             try {
                 List<QuestionEntity> questions = questionService.getAllQuestions();
                 responseMap.put("success", true);
@@ -203,24 +221,79 @@ public class AdminInfoServlet extends HttpServlet {
                     responseMap.put("message", "获取班级教师数据时发生内部错误。");
                 }
             }
-        }
-        else {
-            AdminEntity sessionAdmin = (AdminEntity) session.getAttribute("admin");
-            String adminName = sessionAdmin.getName();
-            logger.debug("Session 中的管理员姓名: {}", adminName);
-
+        } else if ("getLessons".equals(action)) {
             try {
+                List<LessonEntity> lessons = lessonService.getAllLessons();
                 responseMap.put("success", true);
-                responseMap.put("admin", sessionAdmin);
-                responseMap.put("message", "管理员信息加载成功。");
-
-                logger.debug("成功获取学号 {} 的最新信息，返回给客户端。", adminName);
+                responseMap.put("lessons", lessons);
+                responseMap.put("message", "课程数据加载成功。");
+                logger.debug("成功获取 {} 个课程。", lessons.size());
             } catch (Exception e) {
-                logger.error("获取管理员信息或处理响应时发生异常，姓名: {}", adminName, e);
+                logger.error("获取课程数据时发生异常。", e);
                 response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
                 responseMap.put("success", false);
-                responseMap.put("message", "获取管理员信息时发生内部错误。");
+                responseMap.put("message", "获取课程数据时发生内部错误。");
             }
+        } else if ("getStudentsByLessonId".equals(action)) {
+            String lessonIdStr = request.getParameter("lessonId");
+            if (lessonIdStr == null || lessonIdStr.isEmpty()) {
+                logger.warn("请求缺少 lessonId 参数。");
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                responseMap.put("success", false);
+                responseMap.put("message", "缺少课程ID参数。");
+            } else {
+                try {
+                    int lessonId = Integer.parseInt(lessonIdStr);
+                    List<StudentEntity> students = studentService.getStudentsByLessonId(lessonId);
+                    responseMap.put("success", true);
+                    responseMap.put("students", students);
+                    responseMap.put("message", "课程学生数据加载成功。");
+                    logger.debug("成功获取课程 ID {} 的 {} 个学生。", lessonId, students.size());
+                } catch (NumberFormatException e) {
+                    logger.warn("lessonId 参数格式无效: {}", lessonIdStr);
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    responseMap.put("success", false);
+                    responseMap.put("message", "课程ID参数格式无效。");
+                } catch (Exception e) {
+                    logger.error("获取课程学生数据时发生异常，课程ID: {}", lessonIdStr, e);
+                    response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                    responseMap.put("success", false);
+                    responseMap.put("message", "获取课程学生数据时发生内部错误。");
+                }
+            }
+        } else if ("getTeachersByLessonId".equals(action)) {
+            String lessonIdStr = request.getParameter("lessonId");
+            if (lessonIdStr == null || lessonIdStr.isEmpty()) {
+                logger.warn("请求缺少 lessonId 参数。");
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                responseMap.put("success", false);
+                responseMap.put("message", "缺少课程ID参数。");
+            } else {
+                try {
+                    int lessonId = Integer.parseInt(lessonIdStr);
+                    List<TeacherEntity> teachers = teacherService.getTeachersByLessonId(lessonId);
+                    responseMap.put("success", true);
+                    responseMap.put("teachers", teachers);
+                    responseMap.put("message", "课程教师数据加载成功。");
+                    logger.debug("成功获取课程 ID {} 的 {} 个教师。", lessonId, teachers.size());
+                } catch (NumberFormatException e) {
+                    logger.warn("lessonId 参数格式无效: {}", lessonIdStr);
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    responseMap.put("success", false);
+                    responseMap.put("message", "课程ID参数格式无效。");
+                } catch (Exception e) {
+                    logger.error("获取课程教师数据时发生异常，课程ID: {}", lessonIdStr, e);
+                    response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                    responseMap.put("success", false);
+                    responseMap.put("message", "获取课程教师数据时发生内部错误。");
+                }
+            }
+        } else {
+            // This else block is for unrecognized actions after the initial session check.
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            responseMap.put("success", false);
+            responseMap.put("message", "不支持的 GET 请求动作。");
+            logger.warn("收到不支持的 GET 请求动作: {}", action);
         }
 
         mapper.writeValue(response.getWriter(), responseMap);
@@ -316,6 +389,78 @@ public class AdminInfoServlet extends HttpServlet {
                     response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
                     responseMap.put("success", false);
                     responseMap.put("message", "添加班级时发生内部错误。");
+                }
+            }
+        } else if ("addLesson".equals(action)) {
+            String title = request.getParameter("title");
+            String description = request.getParameter("description");
+            String semesterIdStr = request.getParameter("semesterId");
+            String teacherIdStr = request.getParameter("teacherId");
+
+            if (title == null || title.isEmpty() || semesterIdStr == null || semesterIdStr.isEmpty() || teacherIdStr == null || teacherIdStr.isEmpty()) {
+                logger.warn("添加课程请求缺少必要参数: title={}, semesterId={}, teacherId={}", title, semesterIdStr, teacherIdStr);
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                responseMap.put("success", false);
+                responseMap.put("message", "课程标题、学期和教师不能为空。");
+            } else {
+                try {
+                    int semesterId = Integer.parseInt(semesterIdStr);
+                    int teacherId = Integer.parseInt(teacherIdStr);
+                    boolean success = lessonService.addLesson(title, description, semesterId, teacherId);
+                    if (success) {
+                        responseMap.put("success", true);
+                        responseMap.put("message", "课程添加成功。");
+                        logger.info("课程 {} 添加成功。", title);
+                    } else {
+                        responseMap.put("success", false);
+                        responseMap.put("message", "课程添加失败。");
+                        logger.warn("课程 {} 添加失败。", title);
+                    }
+                } catch (NumberFormatException e) {
+                    logger.warn("学期ID或教师ID参数格式无效: semesterId={}, teacherId={}", semesterIdStr, teacherIdStr, e);
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    responseMap.put("success", false);
+                    responseMap.put("message", "参数格式无效。");
+                } catch (Exception e) {
+                    logger.error("添加课程时发生异常，标题: {}", title, e);
+                    response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                    responseMap.put("success", false);
+                    responseMap.put("message", "添加课程时发生内部错误。");
+                }
+            }
+        } else if ("assignTeacherToLesson".equals(action)) {
+            String lessonIdStr = request.getParameter("lessonId");
+            String teacherIdStr = request.getParameter("teacherId");
+
+            if (lessonIdStr == null || lessonIdStr.isEmpty() || teacherIdStr == null || teacherIdStr.isEmpty()) {
+                logger.warn("指定教师请求缺少必要参数: lessonId={}, teacherId={}", lessonIdStr, teacherIdStr);
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                responseMap.put("success", false);
+                responseMap.put("message", "课程ID和教师ID不能为空。");
+            } else {
+                try {
+                    int lessonId = Integer.parseInt(lessonIdStr);
+                    int teacherId = Integer.parseInt(teacherIdStr);
+                    boolean success = lessonService.assignTeacherToLesson(lessonId, teacherId);
+                    if (success) {
+                        responseMap.put("success", true);
+                        responseMap.put("message", "课程教师指定成功。");
+                        logger.info("课程 ID {} 教师指定成功为教师 ID {}。", lessonId, teacherId);
+                    } else {
+                        responseMap.put("success", false);
+                        responseMap.put("message", "课程教师指定失败。");
+                        logger.warn("课程 ID {} 教师指定失败为教师 ID {}。", lessonId, teacherId);
+                    }
+                } catch (NumberFormatException e) {
+                    logger.warn("课程ID或教师ID参数格式无效: lessonId={}, teacherId={}", lessonIdStr, teacherIdStr, e);
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    responseMap.put("success", false);
+                    responseMap.put("message", "参数格式无效。");
+                } catch (Exception e) {
+                    logger.error("指定课程教师时发生异常，课程ID: {}", lessonIdStr, e);
+                    response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                    responseMap.put("success", false);
+                    responseMap.put("message", "指定课程教师时发生内部错误。");
                 }
             }
         } else {
