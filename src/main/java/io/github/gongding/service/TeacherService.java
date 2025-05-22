@@ -155,4 +155,19 @@ public class TeacherService {
             return null;
         }
     }
+
+    /**
+     * 根据课程ID获取教师列表的业务逻辑
+     * @param lessonId 课程ID
+     * @return 教师实体列表
+     */
+    public List<TeacherEntity> getTeachersByLessonId(int lessonId) {
+        logger.info("尝试获取课程 ID {} 的教师列表。", lessonId);
+        try {
+            return teacherDao.getTeachersByLessonId(lessonId);
+        } catch (Exception e) {
+            logger.error("获取课程 ID {} 教师列表时发生异常。", lessonId, e);
+            return null;
+        }
+    }
 }
