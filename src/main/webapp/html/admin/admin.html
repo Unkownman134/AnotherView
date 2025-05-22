@@ -52,6 +52,21 @@
             }
         }
 
+        .shimmer {
+            background: linear-gradient(to right, #f6f7f8 0%, #edeef1 20%, #f6f7f8 40%, #f6f7f8 100%);
+            background-size: 800px 100%;
+            animation: shimmer 1.5s infinite linear;
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: -800px 0;
+            }
+            100% {
+                background-position: 800px 0;
+            }
+        }
+
         .sidebar {
             position: relative;
             transition: width 0.3s ease;
@@ -377,8 +392,90 @@
                 <i class="fas fa-book text-blue-500 mr-3" aria-hidden="true"></i>
                 <span>课程管理</span>
             </h2>
-            <div class="text-center py-8 text-gray-500">
-                <p>课程管理内容将在此处显示。</p>
+            <div class="controls mb-6 flex flex-col sm:flex-row sm:items-end gap-4">
+                <button onclick="openAddLessonModal()"
+                        class="btn bg-green-500 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-300 transition-all flex items-center justify-center h-auto"
+                        aria-label="添加课程">
+                    <i class="fas fa-plus mr-1" aria-hidden="true"></i>添加课程
+                </button>
+                <div class="flex flex-col flex-grow">
+                    <label for="lesson-title-filter"
+                           class="block text-gray-700 text-sm font-bold mb-1 flex items-center">
+                        <i class="fas fa-filter text-blue-500 mr-2" aria-hidden="true"></i>
+                        筛选标题:
+                    </label>
+                    <input type="text" id="lesson-title-filter"
+                           placeholder="输入课程标题"
+                           class="shadow appearance-none border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                           aria-label="筛选课程标题">
+                </div>
+
+                <div class="flex flex-col flex-grow">
+                    <label for="lesson-teacher-filter"
+                           class="block text-gray-700 text-sm font-bold mb-1 flex items-center">
+                        <i class="fas fa-filter text-blue-500 mr-2" aria-hidden="true"></i>
+                        筛选教师:
+                    </label>
+                    <input type="text" id="lesson-teacher-filter"
+                           placeholder="输入教师姓名"
+                           class="shadow appearance-none border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                           aria-label="筛选教师姓名">
+                </div>
+
+                <div class="flex flex-col flex-grow">
+                    <label for="lesson-semester-filter"
+                           class="block text-gray-700 text-sm font-bold mb-1 flex items-center">
+                        <i class="fas fa-filter text-blue-500 mr-2" aria-hidden="true"></i>
+                        筛选学期:
+                    </label>
+                    <input type="text" id="lesson-semester-filter"
+                           placeholder="输入学期名称"
+                           class="shadow appearance-none border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                           aria-label="筛选学期名称">
+                </div>
+
+                <div class="flex items-end flex-grow relative">
+                    <i class="fas fa-search absolute left-3 bottom-2 text-gray-400" aria-hidden="true"></i>
+                    <label for="lesson-search-input" class="sr-only">搜索课程</label>
+                    <input type="text" id="lesson-search-input"
+                           placeholder="搜索课程标题或描述..."
+                           class="shadow appearance-none border rounded-lg flex-grow py-2 pl-10 pr-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                           aria-label="搜索课程标题或描述">
+                    <button onclick="loadLessons()"
+                            class="btn ml-2 bg-blue-500 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all flex items-center justify-center h-auto"
+                            aria-label="搜索">
+                        <i class="fas fa-search mr-1" aria-hidden="true"></i>搜索
+                    </button>
+                </div>
+            </div>
+            <div class="overflow-x-auto rounded-lg border border-gray-200 shadow-sm" role="region"
+                 aria-labelledby="lesson-list-heading">
+                <h3 id="lesson-list-heading" class="sr-only">课程列表</h3>
+                <table class="min-w-full bg-white">
+                    <thead>
+                    <tr class="bg-gradient-to-r from-blue-50 to-blue-100 text-gray-600 uppercase text-sm leading-normal">
+                        <th class="py-3 px-6 text-left" scope="col">课程ID</th>
+                        <th class="py-3 px-6 text-left" scope="col">标题</th>
+                        <th class="py-3 px-6 text-left" scope="col">描述</th>
+                        <th class="py-3 px-6 text-left" scope="col">所属学期</th>
+                        <th class="py-3 px-6 text-left" scope="col">所属教师</th>
+                        <th class="py-3 px-6 text-center" scope="col">操作</th>
+                        <th class="py-3 px-6 text-center" scope="col">详情</th>
+                    </tr>
+                    </thead>
+                    <tbody id="lesson-list" class="text-gray-600 text-sm">
+                    </tbody>
+                </table>
+                <div id="loading-lessons-message" class="text-center py-8 text-gray-500" style="display: none;"
+                     aria-live="polite">
+                    <div class="loader mb-3" role="status" aria-label="加载中"></div>
+                    <p>正在加载课程数据...</p>
+                </div>
+                <div id="no-lessons-data-message" class="text-center py-8 text-gray-500" style="display: none;"
+                     aria-live="polite">
+                    <i class="fas fa-book-open text-4xl mb-2 text-gray-300" aria-hidden="true"></i>
+                    <p>没有找到课程数据。</p>
+                </div>
             </div>
         </section>
 
@@ -580,80 +677,85 @@
     </div>
 </div>
 
+<div id="add-lesson-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50 animate__animated animate__fadeIn">
+    <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md animate__animated animate__zoomIn">
+        <h3 class="text-xl font-bold mb-4 text-gray-800 border-b pb-3">添加新课程</h3>
+        <div class="mb-4">
+            <label for="new-lesson-title" class="block text-gray-700 text-sm font-bold mb-2">课程标题:</label>
+            <input type="text" id="new-lesson-title"
+                   class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                   placeholder="请输入课程标题" aria-label="课程标题">
+        </div>
+        <div class="mb-4">
+            <label for="new-lesson-description" class="block text-gray-700 text-sm font-bold mb-2">课程描述:</label>
+            <textarea id="new-lesson-description"
+                      class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all h-24 resize-none"
+                      placeholder="请输入课程描述 (可选)" aria-label="课程描述"></textarea>
+        </div>
+        <div class="mb-4">
+            <label for="new-lesson-semester" class="block text-gray-700 text-sm font-bold mb-2">所属学期:</label>
+            <select id="new-lesson-semester"
+                    class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                    aria-label="所属学期">
+            </select>
+        </div>
+        <div class="mb-4">
+            <label for="new-lesson-teacher" class="block text-gray-700 text-sm font-bold mb-2">指定教师:</label>
+            <select id="new-lesson-teacher"
+                    class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                    aria-label="指定教师">
+            </select>
+        </div>
+        <div class="flex justify-end gap-3">
+            <button onclick="closeAddLessonModal()"
+                    class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-300 transition-all">
+                取消
+            </button>
+            <button onclick="saveNewLesson()"
+                    class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all">
+                保存
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="assign-teacher-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50 animate__animated animate__fadeIn">
+    <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md animate__animated animate__zoomIn">
+        <h3 id="assign-teacher-modal-title" class="text-xl font-bold mb-4 text-gray-800 border-b pb-3">为课程指定教师</h3>
+        <input type="hidden" id="assign-teacher-lesson-id">
+        <div id="modal-teacher-list" class="mb-4 max-h-60 overflow-y-auto">
+            <div class="loader mb-3" role="status" aria-label="加载中"></div>
+            <p class="text-center text-gray-500">正在加载教师列表...</p>
+        </div>
+        <div class="flex justify-end gap-3">
+            <button onclick="closeAssignTeacherModal()"
+                    class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-300 transition-all">
+                取消
+            </button>
+            <button id="assign-teacher-modal-save-btn" onclick="saveAssignedTeacher()"
+                    class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all">
+                保存
+            </button>
+        </div>
+    </div>
+</div>
+
+
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
 <script>
+    console.log("admin.html script loaded. Version: 2024-05-22-v4");
+
     let allClassesMap = new Map();
-    let currentTeacherId = null;
-    let currentTeacherName = null;
+    let allTeachersMap = new Map();
+    let allSemestersMap = new Map();
+    let currentTeacherIdForClass = null;
+    let currentTeacherNameForClass = null;
+    let currentLessonIdForTeacherAssignment = null;
     let allTeachersData = [];
     let allSemestersData = [];
+    let allLessonsData = [];
     let expandedClassRows = new Set();
-
-    $(document).ready(function () {
-        animateEntranceSequence();
-
-        $.get("/Anotherview/api/adminInfo", function (response) {
-            if (response.success && response.admin) {
-                const admin = response.admin;
-                $("#username").text(admin.name);
-                $("#dashboard-admin-name").text(admin.name);
-                showNotification("管理员信息加载成功！", "success");
-                navigateTo('dashboard');
-            } else {
-                showNotification("无法获取管理员信息，请重新登录", "error");
-                setTimeout(() => {
-                    window.location.href = "/Anotherview/html/admin/admin-login.html";
-                }, 2000);
-            }
-        }).fail((xhr) => {
-            const errorMessage = xhr.responseJSON ? xhr.responseJSON.message : xhr.responseText || "未知错误";
-            showNotification("无法获取管理员信息: " + errorMessage + "，请重新登录", "error");
-            setTimeout(() => {
-                window.location.href = "/Anotherview/html/admin/admin-login.html";
-            }, 2000);
-        });
-
-        $("#question-type-filter, #question-difficulty-filter").on('change', function () {
-            loadQuestions();
-        });
-
-        $("#question-search-input").on('input', function () {
-            clearTimeout(this.searchTimer);
-            this.searchTimer = setTimeout(() => {
-                loadQuestions();
-            }, 300);
-        });
-        $("#lesson-id-filter").on('input', function () {
-            clearTimeout(this.lessonIdTimer);
-            this.lessonIdTimer = setTimeout(() => {
-                loadQuestions();
-            }, 300);
-        });
-
-        $("#teacher-name-filter, #teacher-email-filter").on('input', function () {
-            clearTimeout(this.filterTimer);
-            this.filterTimer = setTimeout(() => {
-                renderTeachers(allTeachersData);
-            }, 300);
-        });
-
-        $("#teacher-search-input").on('input', function () {
-            clearTimeout(this.searchTimer);
-            this.searchTimer = setTimeout(() => {
-                renderTeachers(allTeachersData);
-            }, 300);
-        });
-
-
-        $(".sidebar-button").removeClass("active").attr("aria-current", "false");
-        $('.sidebar-button').each(function () {
-            if ($(this).attr('onclick').includes("navigateTo('dashboard')")) {
-                $(this).addClass('active').attr("aria-current", "page");
-            }
-        });
-
-        loadAllClasses();
-    });
+    let expandedLessonRows = new Set();
 
     function animateEntranceSequence() {
         document.getElementById('dashboard-section').classList.add('animate__animated', 'animate__fadeIn');
@@ -700,6 +802,7 @@
             loadTeachers();
         } else if (page === 'course-management') {
             $("#course-management-section").show();
+            loadLessons();
         } else if (page === 'student-management') {
             $("#student-management-section").show();
         } else if (page === 'question-management') {
@@ -721,31 +824,39 @@
             <p class="text-center">正在加载个人信息...</p>
         `);
 
-        $.get("/Anotherview/api/adminInfo", function (response) {
+        $.get("/Anotherview/api/adminInfo", {action: "getAdminInfo"}, function (response) {
             $personalInfoContent.empty();
             if (response.success && response.admin) {
                 const admin = response.admin;
+                $("#username").text(admin.name);
+                $("#dashboard-admin-name").text(admin.name);
                 $personalInfoContent.append(`
                     <div class="info-item"><i class="fas fa-id-card" aria-hidden="true"></i><strong>管理员ID:</strong> ${admin.id || 'N/A'}</div>
                     <div class="info-item"><i class="fas fa-user" aria-hidden="true"></i><strong>姓名:</strong> ${admin.name || 'N/A'}</div>
                     <div class="info-item"><i class="fas fa-envelope" aria-hidden="true"></i><strong>邮箱:</strong> ${admin.email || 'N/A'}</div>
                     <div class="info-item"><i class="fas fa-calendar-alt" aria-hidden="true"></i><strong>创建日期:</strong> ${admin.createdAt ? formatDisplayDateTime(admin.createdAt) : 'N/A'}</div>
                     <div class="info-item"><i class="fas fa-clock" aria-hidden="true"></i><strong>上次登录:</strong> ${admin.lastLogin ? formatDisplayDateTime(admin.lastLogin) : 'N/A'}</div>
-                    `);
+                `);
             } else {
                 $personalInfoContent.html(`
                     <i class="fas fa-exclamation-circle text-4xl mb-2 text-red-400" aria-hidden="true"></i>
                     <p class="text-center">无法获取个人信息。</p>
-                 `);
-                showNotification("无法获取个人信息", "error");
+               `);
+                showNotification("无法获取管理员信息，请重新登录", "error");
+                setTimeout(() => {
+                    window.location.href = "/Anotherview/html/admin/admin-login.html";
+                }, 2000);
             }
         }).fail((xhr, status, error) => {
             console.error("加载个人信息失败:", error);
             $personalInfoContent.html(`
                 <i class="fas fa-exclamation-circle text-4xl mb-2 text-red-400" aria-hidden="true"></i>
                 <p class="text-center">加载个人信息失败。</p>
-             `);
-            showNotification('加载个人信息失败: ' + (xhr.responseJSON ? xhr.responseJSON.message : xhr.responseText), "error");
+            `);
+            showNotification('加载个人信息失败: ' + (xhr.responseJSON ? xhr.responseJSON.message : xhr.responseText) + "，请重新登录", "error");
+            setTimeout(() => {
+                window.location.href = "/Anotherview/html/admin/admin-login.html";
+            }, 2000);
         });
     }
 
@@ -823,190 +934,7 @@
                 </tr>
             `);
             $questionListTbody.append(row);
-            setTimeout(() => {
-                row.addClass('fade-in');
-            }, 50 * index);
-        });
-    }
-
-    function loadTeachers() {
-        $("#loading-teachers-message").show();
-        $("#no-teachers-data-message").hide();
-        $("#teacher-list").empty();
-
-        for (let i = 0; i < 5; i++) {
-            $("#teacher-list").append(`
-                <tr>
-                    <td colspan="5" class="py-4"> <div class="shimmer w-full h-10 rounded-md"></div></td>
-                </tr>
-            `);
-        }
-
-        $.get("/Anotherview/api/adminInfo", {action: "getTeachers"}, function (response) {
-            $("#teacher-list").empty();
-            $("#loading-teachers-message").hide();
-
-            if (response.success && response.teachers && response.teachers.length > 0) {
-                allTeachersData = response.teachers;
-                renderTeachers(allTeachersData);
-            } else {
-                $("#no-teachers-data-message").show();
-            }
-        }).fail((xhr) => {
-            $("#teacher-list").empty();
-            $("#loading-teachers-message").hide();
-            $("#no-teachers-data-message").show().find('p').text('加载教师数据失败。');
-            showNotification('加载教师数据失败: ' + (xhr.responseJSON ? xhr.responseJSON.message : xhr.responseText), "error");
-        });
-    }
-
-    function renderTeachers(teachers) {
-        const $teacherListTbody = $("#teacher-list");
-        $teacherListTbody.empty();
-
-        const nameFilter = $('#teacher-name-filter').val().toLowerCase().trim();
-        const emailFilter = $('#teacher-email-filter').val().toLowerCase().trim();
-        const searchTerm = $("#teacher-search-input").val().toLowerCase().trim();
-
-        let filteredTeachers = teachers.filter(teacher => {
-            const matchesName = nameFilter === '' || (teacher.name && teacher.name.toLowerCase().includes(nameFilter));
-            const matchesEmail = emailFilter === '' || (teacher.email && teacher.email.toLowerCase().includes(emailFilter));
-            const matchesSearch = searchTerm === '' ||
-                (teacher.name && teacher.name.toLowerCase().includes(searchTerm)) ||
-                (teacher.email && teacher.email.toLowerCase().includes(searchTerm));
-            return matchesName && matchesEmail && matchesSearch;
-        });
-
-        if (!filteredTeachers || filteredTeachers.length === 0) {
-            $("#no-teachers-data-message").show();
-            return;
-        } else {
-            $("#no-teachers-data-message").hide();
-        }
-
-        filteredTeachers.forEach((teacher, index) => {
-            $.get("/Anotherview/api/adminInfo", {action: "getTeacherClasses", teacherId: teacher.id}, function (classResponse) {
-                let associatedClassName = "未分配";
-                let associatedClassId = -1;
-                if (classResponse.success && classResponse.associatedClassIds && classResponse.associatedClassIds.length > 0) {
-                    associatedClassId = classResponse.associatedClassIds[0];
-                    associatedClassName = allClassesMap.get(associatedClassId) || `ID: ${associatedClassId}`;
-                }
-
-                const row = $(`
-                    <tr class="border-b border-gray-200 hover:bg-blue-50" data-index="${index}">
-                        <td class="py-3 px-6 text-left font-semibold">${teacher.id || 'N\A'}</td>
-                        <td class="py-3 px-6 text-left">${teacher.name || 'N\A'}</td>
-                        <td class="py-3 px-6 text-left">${teacher.email || 'N\A'}</td>
-                        <td class="py-3 px-6 text-left" id="teacher-${teacher.id}-class-name">${associatedClassName}</td>
-                        <td class="py-3 px-6 text-left">
-                            <button onclick="openSelectClassModal(${teacher.id}, '${teacher.name}', ${associatedClassId})"
-                                    class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all flex items-center justify-center">
-                                <i class="fas fa-edit mr-1"></i>选班
-                            </button>
-                        </td>
-                    </tr>
-                `);
-                $teacherListTbody.append(row);
-                setTimeout(() => {
-                    row.addClass('fade-in');
-                }, 50 * index);
-            }).fail(() => {
-                const row = $(`
-                    <tr class="border-b border-gray-200 hover:bg-blue-50" data-index="${index}">
-                        <td class="py-3 px-6 text-left font-semibold">${teacher.id || 'N\A'}</td>
-                        <td class="py-3 px-6 text-left">${teacher.name || 'N\A'}</td>
-                        <td class="py-3 px-6 text-left">${teacher.email || 'N\A'}</td>
-                        <td class="py-3 px-6 text-left">加载失败</td>
-                        <td class="py-3 px-6 text-left">
-                            <button onclick="openSelectClassModal(${teacher.id}, '${teacher.name}', -1)"
-                                    class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all flex items-center justify-center">
-                                <i class="fas fa-edit mr-1"></i>选班
-                            </button>
-                        </td>
-                    </tr>
-                `);
-                $teacherListTbody.append(row);
-                setTimeout(() => {
-                    row.addClass('fade-in');
-                }, 50 * index);
-            });
-        });
-    }
-
-    function loadAllClasses() {
-        $.get("/Anotherview/api/adminInfo", {action: "getClasses"}, function (response) {
-            if (response.success && response.classes && response.classes.length > 0) {
-                allClassesMap.clear();
-                response.classes.forEach(cls => {
-                    allClassesMap.set(cls.id, cls.name);
-                });
-            } else {
-                console.error("Failed to load all classes:", response.message);
-                showNotification("加载班级列表失败！", "error");
-            }
-        }).fail((xhr) => {
-            console.error("Error fetching all classes:", xhr);
-            showNotification('加载班级列表失败: ' + (xhr.responseJSON ? xhr.responseJSON.message : xhr.responseText), "error");
-        });
-    }
-
-    function loadSemesters() {
-        $("#loading-semesters-message").show();
-        $("#no-semesters-data-message").hide();
-        $("#semester-list").empty();
-
-        for (let i = 0; i < 5; i++) {
-            $("#semester-list").append(`
-                <tr>
-                    <td colspan="5" class="py-4"> <div class="shimmer w-full h-10 rounded-md"></div></td>
-                </tr>
-            `);
-        }
-
-        $.get("/Anotherview/api/adminInfo", {action: "getSemesters"}, function (response) {
-            $("#semester-list").empty();
-            $("#loading-semesters-message").hide();
-
-            if (response.success && response.semesters && response.semesters.length > 0) {
-                allSemestersData = response.semesters;
-                renderSemesters(allSemestersData);
-            } else {
-                $("#no-semesters-data-message").show();
-            }
-        }).fail((xhr) => {
-            $("#semester-list").empty();
-            $("#loading-semesters-message").hide();
-            $("#no-semesters-data-message").show().find('p').text('加载学期数据失败。');
-            showNotification('加载学期数据失败: ' + (xhr.responseJSON ? xhr.responseJSON.message : xhr.responseText), "error");
-        });
-    }
-
-    function renderSemesters(semesters) {
-        const $semesterListTbody = $("#semester-list");
-        $semesterListTbody.empty();
-
-        if (!semesters || semesters.length === 0) {
-            $("#no-semesters-data-message").show();
-            return;
-        } else {
-            $("#no-semesters-data-message").hide();
-        }
-
-        semesters.forEach((semester, index) => {
-            const row = $(`
-                <tr class="border-b border-gray-200 hover:bg-blue-50" data-index="${index}">
-                    <td class="py-3 px-6 text-left font-semibold">${semester.id || 'N\A'}</td>
-                    <td class="py-3 px-6 text-left">${semester.name || 'N\A'}</td>
-                    <td class="py-3 px-6 text-left">${semester.startDate || 'N\A'}</td>
-                    <td class="py-3 px-6 text-left">${semester.endDate || 'N\A'}</td>
-                    <td class="py-3 px-6 text-left">${semester.createdAt ? formatDisplayDateTime(semester.createdAt) : 'N\A'}</td>
-                </tr>
-            `);
-            $semesterListTbody.append(row);
-            setTimeout(() => {
-                row.addClass('fade-in');
-            }, 50 * index);
+            setTimeout(() => row.addClass('fade-in'), index * 50);
         });
     }
 
@@ -1018,7 +946,9 @@
         for (let i = 0; i < 5; i++) {
             $("#class-list").append(`
                 <tr>
-                    <td colspan="3" class="py-4"> <div class="shimmer w-full h-10 rounded-md"></div></td>
+                    <td colspan="3" class="py-4">
+                        <div class="shimmer w-full h-10 rounded-md"></div>
+                    </td>
                 </tr>
             `);
         }
@@ -1026,24 +956,23 @@
         $.get("/Anotherview/api/adminInfo", {action: "getClasses"}, function (response) {
             $("#class-list").empty();
             $("#loading-classes-message").hide();
-
             if (response.success && response.classes && response.classes.length > 0) {
                 renderClasses(response.classes);
             } else {
                 $("#no-classes-data-message").show();
             }
-        }).fail((xhr) => {
+        }).fail((xhr, status, error) => {
             $("#class-list").empty();
             $("#loading-classes-message").hide();
             $("#no-classes-data-message").show().find('p').text('加载班级数据失败。');
             showNotification('加载班级数据失败: ' + (xhr.responseJSON ? xhr.responseJSON.message : xhr.responseText), "error");
+            console.error("Error loading classes:", error, xhr.responseText);
         });
     }
 
     function renderClasses(classes) {
         const $classListTbody = $("#class-list");
         $classListTbody.empty();
-        expandedClassRows.clear();
 
         if (!classes || classes.length === 0) {
             $("#no-classes-data-message").show();
@@ -1054,14 +983,14 @@
 
         classes.forEach((cls, index) => {
             const row = $(`
-                <tr class="border-b border-gray-200 hover:bg-blue-50 cursor-pointer" data-class-id="${cls.id}" data-index="${index}" onclick="toggleClassDetails(${cls.id}, this)">
+                <tr class="border-b border-gray-200 hover:bg-blue-50 cursor-pointer" data-class-id="${cls.id}" data-index="${index}" onclick="toggleClassDetails(${cls.id}, this, 'class')">
                     <td class="py-3 px-6 text-left font-semibold">${cls.id || 'N\A'}</td>
                     <td class="py-3 px-6 text-left">${cls.name || 'N\A'}</td>
                     <td class="py-3 px-6 text-center">
-                        <i class="fas fa-chevron-down text-blue-500 transition-transform duration-300"></i>
+                        <i class="fas fa-chevron-down text-blue-500 transition-transform duration-300 ${expandedClassRows.has(cls.id) ? 'rotate-180' : ''}"></i>
                     </td>
                 </tr>
-                <tr id="class-details-${cls.id}" class="hidden">
+                <tr id="class-details-${cls.id}" class="${expandedClassRows.has(cls.id) ? '' : 'hidden'}">
                     <td colspan="3" class="p-4 bg-blue-50">
                         <div class="flex flex-col md:flex-row gap-4">
                             <div class="w-full md:w-1/2">
@@ -1087,26 +1016,550 @@
                 </tr>
             `);
             $classListTbody.append(row);
-            setTimeout(() => {
-                row.addClass('fade-in');
-            }, 50 * index);
+            setTimeout(() => row.addClass('fade-in'), index * 50);
+
+            if (expandedClassRows.has(cls.id)) {
+                loadStudentsForClass(cls.id);
+                loadTeachersForClass(cls.id);
+            }
         });
     }
 
-    function toggleClassDetails(classId, clickedRow) {
-        const $detailsRow = $(`#class-details-${classId}`);
-        const $icon = $(clickedRow).find('.fa-chevron-down');
+    function loadAllClasses() {
+        return $.get("/Anotherview/api/adminInfo", {action: "getClasses"}, function (response) {
+            if (response.success && response.classes) {
+                allClassesMap.clear();
+                response.classes.forEach(cls => {
+                    allClassesMap.set(cls.id, cls.name);
+                });
+            } else {
+                console.error("Failed to load all classes:", response.message);
+            }
+        }).fail((xhr) => {
+            console.error("Error loading all classes:", xhr.responseText);
+        });
+    }
 
-        if (expandedClassRows.has(classId)) {
+    function loadTeachers() {
+        $("#loading-teachers-message").show();
+        $("#no-teachers-data-message").hide();
+        $("#teacher-list").empty();
+
+        for (let i = 0; i < 5; i++) {
+            $("#teacher-list").append(`
+                <tr>
+                    <td colspan="5" class="py-4">
+                        <div class="shimmer w-full h-10 rounded-md"></div>
+                    </td>
+                </tr>
+            `);
+        }
+
+        $.get("/Anotherview/api/adminInfo", {action: "getTeachers"}, function (response) {
+            $("#teacher-list").empty();
+            $("#loading-teachers-message").hide();
+
+            if (response.success && response.teachers && response.teachers.length > 0) {
+                allTeachersData = response.teachers;
+                renderTeachers(allTeachersData);
+            } else {
+                $("#no-teachers-data-message").show();
+            }
+        }).fail((xhr, status, error) => {
+            $("#teacher-list").empty();
+            $("#loading-teachers-message").hide();
+            $("#no-teachers-data-message").show().find('p').text('加载教师数据失败。');
+            showNotification('加载教师数据失败: ' + (xhr.responseJSON ? xhr.responseJSON.message : xhr.responseText), "error");
+            console.error("Error loading teachers:", error, xhr.responseText);
+        });
+    }
+
+    function renderTeachers(teachers) {
+        const $teacherListTbody = $("#teacher-list");
+        $teacherListTbody.empty();
+        allTeachersMap.clear();
+
+        if (!teachers || teachers.length === 0) {
+            $("#no-teachers-data-message").show();
+            return;
+        } else {
+            $("#no-teachers-data-message").hide();
+        }
+
+        const nameFilter = $('#teacher-name-filter').val().toLowerCase();
+        const emailFilter = $('#teacher-email-filter').val().toLowerCase();
+        const searchTerm = $("#teacher-search-input").val().toLowerCase().trim();
+
+        let filteredTeachers = teachers.filter(teacher => {
+            const matchesName = nameFilter === '' || (teacher.name && teacher.name.toLowerCase().includes(nameFilter));
+            const matchesEmail = emailFilter === '' || (teacher.email && teacher.email.toLowerCase().includes(emailFilter));
+            const matchesSearch = searchTerm === '' ||
+                (teacher.name && teacher.name.toLowerCase().includes(searchTerm)) ||
+                (teacher.email && teacher.email.toLowerCase().includes(searchTerm));
+            return matchesName && matchesEmail && matchesSearch;
+        });
+
+
+        filteredTeachers.forEach((teacher, index) => {
+            allTeachersMap.set(teacher.id, teacher.name);
+            $.get("/Anotherview/api/adminInfo", {action: "getTeacherClasses", teacherId: teacher.id}, function (classResponse) {
+                let associatedClassName = "未分配";
+                let associatedClassId = -1;
+                if (classResponse.success && classResponse.associatedClassIds && classResponse.associatedClassIds.length > 0) {
+                    associatedClassId = classResponse.associatedClassIds[0];
+                    associatedClassName = allClassesMap.get(associatedClassId) || `ID: ${associatedClassId}`;
+                }
+
+                const row = $(`
+                    <tr class="border-b border-gray-200 hover:bg-blue-50" data-teacher-id="${teacher.id}">
+                        <td class="py-3 px-6 text-left font-semibold">${teacher.id || 'N\A'}</td>
+                        <td class="py-3 px-6 text-left">${teacher.name || 'N\A'}</td>
+                        <td class="py-3 px-6 text-left">${teacher.email || 'N\A'}</td>
+                        <td class="py-3 px-6 text-left" id="teacher-${teacher.id}-class-name">${associatedClassName}</td>
+                        <td class="py-3 px-6 text-left">
+                            <button onclick="openSelectClassModal(${teacher.id}, '${teacher.name}', ${associatedClassId})"
+                                    class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all">
+                                <i class="fas fa-edit mr-1"></i>管理班级
+                            </button>
+                        </td>
+                    </tr>
+                `);
+                $teacherListTbody.append(row);
+                setTimeout(() => row.addClass('fade-in'), index * 50);
+            }).fail((xhr) => {
+                const row = $(`
+                    <tr class="border-b border-gray-200 hover:bg-blue-50" data-teacher-id="${teacher.id}">
+                        <td class="py-3 px-6 text-left font-semibold">${teacher.id || 'N\A'}</td>
+                        <td class="py-3 px-6 text-left">${teacher.name || 'N\A'}</td>
+                        <td class="py-3 px-6 text-left">${teacher.email || 'N\A'}</td>
+                        <td class="py-3 px-6 text-left" id="teacher-${teacher.id}-class-name">加载失败</td>
+                        <td class="py-3 px-6 text-left">
+                            <button onclick="openSelectClassModal(${teacher.id}, '${teacher.name}', -1)"
+                                    class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all">
+                                <i class="fas fa-edit mr-1"></i>管理班级
+                            </button>
+                        </td>
+                    </tr>
+                `);
+                $teacherListTbody.append(row);
+                setTimeout(() => row.addClass('fade-in'), index * 50);
+                console.error(`Error loading classes for teacher ${teacher.id}:`, xhr.responseText);
+            });
+        });
+    }
+
+    function loadAllTeachers() {
+        return $.get("/Anotherview/api/adminInfo", {action: "getTeachers"}, function (response) {
+            if (response.success && response.teachers) {
+                allTeachersData = response.teachers;
+                allTeachersMap.clear();
+                response.teachers.forEach(teacher => {
+                    allTeachersMap.set(teacher.id, teacher.name);
+                });
+            } else {
+                console.error("Failed to load all teachers:", response.message);
+            }
+        }).fail((xhr) => {
+            console.error("Error loading all teachers:", xhr.responseText);
+        });
+    }
+
+    function loadSemesters() {
+        $("#loading-semesters-message").show();
+        $("#no-semesters-data-message").hide();
+        $("#semester-list").empty();
+
+        for (let i = 0; i < 5; i++) {
+            $("#semester-list").append(`
+                <tr>
+                    <td colspan="5" class="py-4">
+                        <div class="shimmer w-full h-10 rounded-md"></div>
+                    </td>
+                </tr>
+            `);
+        }
+
+        return $.get("/Anotherview/api/adminInfo", {action: "getSemesters"}, function (response) {
+            $("#semester-list").empty();
+            $("#loading-semesters-message").hide();
+
+            if (response.success && response.semesters && response.semesters.length > 0) {
+                allSemestersData = response.semesters;
+                renderSemesters(allSemestersData);
+            } else {
+                $("#no-semesters-data-message").show();
+            }
+        }).fail((xhr, status, error) => {
+            $("#semester-list").empty();
+            $("#loading-semesters-message").hide();
+            $("#no-semesters-data-message").show().find('p').text('加载学期数据失败。');
+            showNotification('加载学期数据失败: ' + (xhr.responseJSON ? xhr.responseJSON.message : xhr.responseText), "error");
+            console.error("Error loading semesters:", error, xhr.responseText);
+        });
+    }
+
+    function renderSemesters(semesters) {
+        const $semesterListTbody = $("#semester-list");
+        $semesterListTbody.empty();
+        allSemestersMap.clear();
+
+        if (!semesters || semesters.length === 0) {
+            $("#no-semesters-data-message").show();
+            return;
+        } else {
+            $("#no-semesters-data-message").hide();
+        }
+
+        semesters.forEach((semester, index) => {
+            allSemestersMap.set(semester.id, semester.name);
+            const row = $(`
+                <tr class="border-b border-gray-200 hover:bg-blue-50" data-semester-id="${semester.id}">
+                    <td class="py-3 px-6 text-left font-semibold">${semester.id || 'N\A'}</td>
+                    <td class="py-3 px-6 text-left">${semester.name || 'N\A'}</td>
+                    <td class="py-3 px-6 text-left">${semester.startDate || 'N\A'}</td>
+                    <td class="py-3 px-6 text-left">${semester.endDate || 'N\A'}</td>
+                    <td class="py-3 px-6 text-left">${semester.createdAt ? formatDisplayDateTime(semester.createdAt) : 'N\A'}</td>
+                </tr>
+            `);
+            $semesterListTbody.append(row);
+            setTimeout(() => row.addClass('fade-in'), index * 50);
+        });
+    }
+
+    function loadLessons() {
+        $("#loading-lessons-message").show();
+        $("#no-lessons-data-message").hide();
+        $("#lesson-list").empty();
+
+        for (let i = 0; i < 5; i++) {
+            $("#lesson-list").append(`
+                <tr>
+                    <td colspan="7" class="py-4">
+                        <div class="shimmer w-full h-10 rounded-md"></div>
+                    </td>
+                </tr>
+            `);
+        }
+
+        $.get("/Anotherview/api/adminInfo", {action: "getLessons"}, function (response) {
+            $("#lesson-list").empty();
+            $("#loading-lessons-message").hide();
+            if (response.success && response.lessons && response.lessons.length > 0) {
+                allLessonsData = response.lessons;
+                renderLessons(allLessonsData);
+            } else {
+                $("#no-lessons-data-message").show();
+            }
+        }).fail((xhr, status, error) => {
+            $("#lesson-list").empty();
+            $("#loading-lessons-message").hide();
+            $("#no-lessons-data-message").show().find('p').text('加载课程数据失败。');
+            showNotification('加载课程数据失败: ' + (xhr.responseJSON ? xhr.responseJSON.message : xhr.responseText), "error");
+            console.error("Error loading lessons:", error, xhr.responseText);
+        });
+    }
+
+    function renderLessons(lessons) {
+        const $lessonListTbody = $("#lesson-list");
+        $lessonListTbody.empty();
+
+        if (!lessons || lessons.length === 0) {
+            $("#no-lessons-data-message").show();
+            return;
+        } else {
+            $("#no-lessons-data-message").hide();
+        }
+
+        const titleFilter = $('#lesson-title-filter').val().toLowerCase();
+        const teacherFilter = $('#lesson-teacher-filter').val().toLowerCase();
+        const semesterFilter = $('#lesson-semester-filter').val().toLowerCase();
+        const searchTerm = $("#lesson-search-input").val().toLowerCase().trim();
+
+        let filteredLessons = lessons.filter(lesson => {
+            const matchesTitle = titleFilter === '' || (lesson.title && lesson.title.toLowerCase().includes(titleFilter));
+            const teacherName = allTeachersMap.get(lesson.teacherId) || '';
+            const matchesTeacher = teacherFilter === '' || teacherName.toLowerCase().includes(teacherFilter);
+            const semesterName = allSemestersMap.get(lesson.semesterId) || '';
+            const matchesSemester = semesterFilter === '' || semesterName.toLowerCase().includes(semesterFilter);
+            const matchesSearch = searchTerm === '' ||
+                (lesson.title && lesson.title.toLowerCase().includes(searchTerm)) ||
+                (lesson.description && lesson.description.toLowerCase().includes(searchTerm)) ||
+                teacherName.toLowerCase().includes(searchTerm) ||
+                semesterName.toLowerCase().includes(searchTerm);
+            return matchesTitle && matchesTeacher && matchesSemester && matchesSearch;
+        });
+
+        filteredLessons.forEach((lesson, index) => {
+            const teacherName = allTeachersMap.get(lesson.teacherId) || '未指定教师';
+            const semesterName = allSemestersMap.get(lesson.semesterId) || '未知学期';
+            const row = $(`
+                <tr class="border-b border-gray-200 hover:bg-blue-50 cursor-pointer" data-lesson-id="${lesson.id}" data-index="${index}" onclick="toggleClassDetails(${lesson.id}, this, 'lesson')">
+                    <td class="py-3 px-6 text-left font-semibold">${lesson.id || 'N\A'}</td>
+                    <td class="py-3 px-6 text-left max-w-xs overflow-hidden text-ellipsis whitespace-nowrap" title="${lesson.title}">${lesson.title || 'N\A'}</td>
+                    <td class="py-3 px-6 text-left max-w-xs overflow-hidden text-ellipsis whitespace-nowrap" title="${lesson.description}">${lesson.description || '无'}</td>
+                    <td class="py-3 px-6 text-left">${semesterName}</td>
+                    <td class="py-3 px-6 text-left" id="lesson-${lesson.id}-teacher-name">${teacherName}</td>
+                    <td class="py-3 px-6 text-center flex items-center justify-center">
+                        <button onclick="event.stopPropagation(); openAssignTeacherModal(${lesson.id}, '${lesson.title}', ${lesson.teacherId})"
+                                class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all flex items-center justify-center">
+                            <i class="fas fa-user-plus mr-1"></i>指定教师
+                        </button>
+                    </td>
+                    <td class="py-3 px-6 text-center">
+                        <i class="fas fa-chevron-down text-blue-500 transition-transform duration-300 ${expandedLessonRows.has(lesson.id) ? 'rotate-180' : ''}"></i>
+                    </td>
+                </tr>
+                <tr id="lesson-details-${lesson.id}" class="${expandedLessonRows.has(lesson.id) ? '' : 'hidden'}">
+                    <td colspan="7" class="p-4 bg-blue-50">
+                        <div class="flex flex-col md:flex-row gap-4">
+                            <div class="w-full md:w-1/2">
+                                <h4 class="text-lg font-bold mb-2 text-gray-800 flex items-center">
+                                    <i class="fas fa-user-graduate mr-2 text-blue-600"></i>课程学生
+                                </h4>
+                                <div id="lesson-${lesson.id}-students-list" class="bg-white p-3 rounded-md shadow-sm max-h-40 overflow-y-auto">
+                                    <div class="loader mb-3" role="status" aria-label="加载中"></div>
+                                    <p class="text-center text-gray-500">正在加载学生数据...</p>
+                                </div>
+                            </div>
+                            <div class="w-full md:w-1/2">
+                                <h4 class="text-lg font-bold mb-2 text-gray-800 flex items-center">
+                                    <i class="fas fa-chalkboard-teacher mr-2 text-blue-600"></i>课程教师
+                                </h4>
+                                <div id="lesson-${lesson.id}-teachers-list" class="bg-white p-3 rounded-md shadow-sm max-h-40 overflow-y-auto">
+                                    <div class="loader mb-3" role="status" aria-label="加载中"></div>
+                                    <p class="text-center text-gray-500">正在加载教师数据...</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-2 text-gray-700 mt-4">
+                            <p><strong>描述:</strong> <span id="lesson-${lesson.id}-description">${lesson.description || '无'}</span></p>
+                            <p><strong>创建时间:</strong> <span id="lesson-${lesson.id}-createdAt">${lesson.createdAt ? formatDisplayDateTime(lesson.createdAt) : 'N\A'}</span></p>
+                        </div>
+                    </td>
+                </tr>
+            `);
+            $lessonListTbody.append(row);
+            setTimeout(() => row.addClass('fade-in'), index * 50);
+
+            if (expandedLessonRows.has(lesson.id)) {
+                loadLessonDetails(lesson.id);
+            }
+        });
+    }
+
+    function populateSemesterAndTeacherDropdowns() {
+        const $newLessonSemester = $("#new-lesson-semester");
+        const $newLessonTeacher = $("#new-lesson-teacher");
+        $newLessonSemester.empty();
+        $newLessonTeacher.empty();
+
+        if (allSemestersData && allSemestersData.length > 0) {
+            $newLessonSemester.append(`<option value="">请选择学期</option>`);
+            allSemestersData.forEach(semester => {
+                $newLessonSemester.append(`<option value="${semester.id}">${semester.name}</option>`);
+            });
+        } else {
+            $newLessonSemester.append(`<option value="">暂无学期</option>`);
+        }
+
+        if (allTeachersData && allTeachersData.length > 0) {
+            $newLessonTeacher.append(`<option value="">请选择教师</option>`);
+            allTeachersData.forEach(teacher => {
+                $newLessonTeacher.append(`<option value="${teacher.id}">${teacher.name}</option>`);
+            });
+        } else {
+            $newLessonTeacher.append(`<option value="">暂无教师</option>`);
+        }
+    }
+
+    function openAddClassModal() {
+        $("#new-class-name").val('');
+        $("#add-class-modal").removeClass("hidden").addClass("flex");
+    }
+
+    function closeAddClassModal() {
+        $("#add-class-modal").removeClass("flex").addClass("hidden");
+    }
+
+    function saveNewClass() {
+        const className = $("#new-class-name").val().trim();
+        if (!className) {
+            showNotification("班级名称不能为空。", "warning");
+            return;
+        }
+
+        showNotification("正在添加班级...", "info");
+        $("#add-class-modal button.bg-blue-500").prop('disabled', true);
+
+        $.post("/Anotherview/api/adminInfo", {action: "addClass", className: className}, function (response) {
+            if (response.success) {
+                showNotification(response.message, "success");
+                closeAddClassModal();
+                loadClasses();
+                loadAllClasses();
+            } else {
+                showNotification(response.message, "error");
+            }
+            $("#add-class-modal button.bg-blue-500").prop('disabled', false);
+        }).fail((xhr) => {
+            showNotification('添加班级失败: ' + (xhr.responseJSON ? xhr.responseJSON.message : xhr.responseText), "error");
+            $("#add-class-modal button.bg-blue-500").prop('disabled', false);
+        });
+    }
+
+    function openAddLessonModal() {
+        $("#new-lesson-title").val('');
+        $("#new-lesson-description").val('');
+        populateSemesterAndTeacherDropdowns();
+        $("#add-lesson-modal").removeClass("hidden").addClass("flex");
+    }
+
+    function closeAddLessonModal() {
+        $("#add-lesson-modal").removeClass("flex").addClass("hidden");
+    }
+
+    function saveNewLesson() {
+        const title = $("#new-lesson-title").val().trim();
+        const description = $("#new-lesson-description").val().trim();
+        const semesterId = $("#new-lesson-semester").val();
+        const teacherId = $("#new-lesson-teacher").val();
+
+        if (!title) {
+            showNotification("课程标题不能为空！", "warning");
+            return;
+        }
+        if (!semesterId) {
+            showNotification("请选择所属学期！", "warning");
+            return;
+        }
+        if (!teacherId) {
+            showNotification("请选择指定教师！", "warning");
+            return;
+        }
+
+        showNotification("正在添加课程...", "info");
+        $("#add-lesson-modal button.bg-blue-500").prop('disabled', true);
+
+        $.post("/Anotherview/api/adminInfo", {
+            action: "addLesson",
+            title: title,
+            description: description,
+            semesterId: semesterId,
+            teacherId: teacherId
+        }, function (response) {
+            if (response.success) {
+                showNotification(response.message, "success");
+                closeAddLessonModal();
+                loadLessons();
+            } else {
+                showNotification(response.message, "error");
+            }
+            $("#add-lesson-modal button.bg-blue-500").prop('disabled', false);
+        }).fail((xhr) => {
+            showNotification('添加课程失败: ' + (xhr.responseJSON ? xhr.responseJSON.message : xhr.responseText), "error");
+            $("#add-lesson-modal button.bg-blue-500").prop('disabled', false);
+        });
+    }
+
+    function openAssignTeacherModal(lessonId, lessonTitle, currentTeacherId) {
+        currentLessonIdForTeacherAssignment = lessonId;
+        $("#assign-teacher-modal-title").text(`为课程 "${lessonTitle}" 指定教师`);
+        $("#assign-teacher-lesson-id").val(lessonId);
+        const $teacherList = $("#modal-teacher-list");
+        $teacherList.empty();
+
+        if (allTeachersData.length === 0) {
+            $teacherList.html('<p class="text-gray-600 text-center">没有可用教师。</p>');
+            $("#assign-teacher-modal-save-btn").prop('disabled', true);
+        } else {
+            $teacherList.append('<label class="inline-flex items-center mt-3 p-2 rounded-md hover:bg-blue-50 cursor-pointer transition-all w-full"><input type="radio" class="form-radio h-5 w-5 text-blue-600" name="selectedTeacher" value="" disabled selected><span class="ml-2 text-gray-700">请选择教师</span></label>');
+
+            allTeachersData.forEach(teacher => {
+                const isChecked = teacher.id === currentTeacherId ? 'checked' : '';
+                $teacherList.append(`
+                    <label class="inline-flex items-center mt-3 p-2 rounded-md hover:bg-blue-50 cursor-pointer transition-all w-full">
+                        <input type="radio" class="form-radio h-5 w-5 text-blue-600" name="selectedTeacher" value="${teacher.id}" ${isChecked}>
+                        <span class="ml-2 text-gray-700">${teacher.name}</span>
+                    </label>
+                `);
+            });
+            if ($teacherList.find('input[type="radio"]').length <= 1) {
+                $("#assign-teacher-modal-save-btn").prop('disabled', true);
+            } else {
+                $("#assign-teacher-modal-save-btn").prop('disabled', false);
+            }
+        }
+
+        $("#assign-teacher-modal").removeClass("hidden").addClass("flex");
+    }
+
+    function closeAssignTeacherModal() {
+        $("#assign-teacher-modal").removeClass("flex").addClass("hidden");
+        currentLessonIdForTeacherAssignment = null;
+    }
+
+    function saveAssignedTeacher() {
+        const lessonId = $("#assign-teacher-lesson-id").val();
+        const selectedTeacherId = $('input[name="selectedTeacher"]:checked').val();
+
+        if (!selectedTeacherId) {
+            showNotification("请选择一个教师！", "warning");
+            return;
+        }
+
+        showNotification("正在指定教师...", "info");
+        $("#assign-teacher-modal-save-btn").prop('disabled', true);
+
+        $.post("/Anotherview/api/adminInfo", {
+            action: "assignTeacherToLesson",
+            lessonId: lessonId,
+            teacherId: selectedTeacherId
+        }, function (response) {
+            if (response.success) {
+                showNotification("教师指定成功！", "success");
+                closeAssignTeacherModal();
+                loadLessons();
+            } else {
+                showNotification("教师指定失败: " + response.message, "error");
+            }
+            $("#assign-teacher-modal-save-btn").prop('disabled', false);
+        }).fail((xhr) => {
+            showNotification('教师指定失败: ' + (xhr.responseJSON ? xhr.responseJSON.message : xhr.responseText), "error");
+            $("#assign-teacher-modal-save-btn").prop('disabled', false);
+        });
+    }
+
+    function toggleClassDetails(id, clickedElement, type) {
+        let $detailsRow;
+        let $icon;
+        let expandedSet;
+
+        if (type === 'class') {
+            $detailsRow = $(`#class-details-${id}`);
+            $icon = $(clickedElement).find('.fa-chevron-down');
+            expandedSet = expandedClassRows;
+        } else if (type === 'lesson') {
+            $detailsRow = $(`#lesson-details-${id}`);
+            $icon = $(clickedElement).find('.fa-chevron-down');
+            expandedSet = expandedLessonRows;
+        } else {
+            return;
+        }
+
+        if (expandedSet.has(id)) {
             $detailsRow.addClass('hidden');
             $icon.removeClass('rotate-180');
-            expandedClassRows.delete(classId);
+            expandedSet.delete(id);
         } else {
             $detailsRow.removeClass('hidden');
             $icon.addClass('rotate-180');
-            expandedClassRows.add(classId);
-            loadStudentsForClass(classId);
-            loadTeachersForClass(classId);
+            expandedSet.add(id);
+            if (type === 'class') {
+                loadStudentsForClass(id);
+                loadTeachersForClass(id);
+            } else if (type === 'lesson') {
+                loadLessonDetails(id);
+            }
         }
     }
 
@@ -1119,7 +1572,7 @@
 
         $.get("/Anotherview/api/adminInfo", {action: "getStudentsByClassId", classId: classId}, function (response) {
             if (response.success && response.students && response.students.length > 0) {
-                renderStudentsForClass(classId, response.students);
+                renderStudentsList($studentListDiv, response.students);
             } else {
                 $studentListDiv.html('<p class="text-center text-gray-500"><i class="fas fa-user-slash mr-1"></i>该班级没有学生。</p>');
             }
@@ -1129,15 +1582,34 @@
         });
     }
 
-    function renderStudentsForClass(classId, students) {
-        const $studentListDiv = $(`#class-${classId}-students-list`);
-        $studentListDiv.empty();
+    function loadStudentsForLesson(lessonId) {
+        const $studentListDiv = $(`#lesson-${lessonId}-students-list`);
+        $studentListDiv.html(`
+            <div class="loader mb-3" role="status" aria-label="加载中"></div>
+            <p class="text-center text-gray-500">正在加载学生数据...</p>
+        `);
+
+        $.get("/Anotherview/api/adminInfo", {action: "getStudentsByLessonId", lessonId: lessonId}, function (response) {
+            console.log(`Students for lesson ${lessonId}:`, response); // Log response
+            if (response.success && response.students && response.students.length > 0) {
+                renderStudentsList($studentListDiv, response.students);
+            } else {
+                $studentListDiv.html('<p class="text-center text-gray-500"><i class="fas fa-user-slash mr-1"></i>该课程没有学生。</p>');
+            }
+        }).fail((xhr) => {
+            $studentListDiv.html('<p class="text-center text-red-500"><i class="fas fa-exclamation-circle mr-1"></i>加载学生失败。</p>');
+            console.error("加载课程学生失败:", xhr.responseJSON ? xhr.responseJSON.message : xhr.responseText);
+        });
+    }
+
+    function renderStudentsList($targetDiv, students) {
+        $targetDiv.empty();
         if (students.length === 0) {
-            $studentListDiv.html('<p class="text-center text-gray-500"><i class="fas fa-user-slash mr-1"></i>该班级没有学生。</p>');
+            $targetDiv.html('<p class="text-center text-gray-500"><i class="fas fa-user-slash mr-1"></i>没有学生。</p>');
             return;
         }
         students.forEach(student => {
-            $studentListDiv.append(`
+            $targetDiv.append(`
                 <div class="flex items-center text-gray-700 py-1 border-b border-gray-100 last:border-b-0">
                     <i class="fas fa-user mr-2 text-blue-400"></i>
                     <span>姓名: ${student.name || 'N/A'}, 学号: ${student.studentNumber || 'N/A'}</span>
@@ -1155,7 +1627,7 @@
 
         $.get("/Anotherview/api/adminInfo", {action: "getTeachersByClassId", classId: classId}, function (response) {
             if (response.success && response.teachers && response.teachers.length > 0) {
-                renderTeachersForClass(classId, response.teachers);
+                renderTeachersList($teacherListDiv, response.teachers);
             } else {
                 $teacherListDiv.html('<p class="text-center text-gray-500"><i class="fas fa-chalkboard-teacher mr-1"></i>该班级没有教师。</p>');
             }
@@ -1165,15 +1637,34 @@
         });
     }
 
-    function renderTeachersForClass(classId, teachers) {
-        const $teacherListDiv = $(`#class-${classId}-teachers-list`);
-        $teacherListDiv.empty();
+    function loadTeachersForLesson(lessonId) {
+        const $teacherListDiv = $(`#lesson-${lessonId}-teachers-list`);
+        $teacherListDiv.html(`
+            <div class="loader mb-3" role="status" aria-label="加载中"></div>
+            <p class="text-center text-gray-500">正在加载教师数据...</p>
+        `);
+
+        $.get("/Anotherview/api/adminInfo", {action: "getTeachersByLessonId", lessonId: lessonId}, function (response) {
+            console.log(`Teachers for lesson ${lessonId}:`, response); // Log response
+            if (response.success && response.teachers && response.teachers.length > 0) {
+                renderTeachersList($teacherListDiv, response.teachers);
+            } else {
+                $teacherListDiv.html('<p class="text-center text-gray-500"><i class="fas fa-chalkboard-teacher mr-1"></i>该课程没有教师。</p>');
+            }
+        }).fail((xhr) => {
+            $teacherListDiv.html('<p class="text-center text-red-500"><i class="fas fa-exclamation-circle mr-1"></i>加载教师失败。</p>');
+            console.error("加载课程教师失败:", xhr.responseJSON ? xhr.responseJSON.message : xhr.responseText);
+        });
+    }
+
+    function renderTeachersList($targetDiv, teachers) {
+        $targetDiv.empty();
         if (teachers.length === 0) {
-            $teacherListDiv.html('<p class="text-center text-gray-500"><i class="fas fa-chalkboard-teacher mr-1"></i>该班级没有教师。</p>');
+            $targetDiv.html('<p class="text-center text-gray-500"><i class="fas fa-chalkboard-teacher mr-1"></i>没有教师。</p>');
             return;
         }
         teachers.forEach(teacher => {
-            $teacherListDiv.append(`
+            $targetDiv.append(`
                 <div class="flex items-center text-gray-700 py-1 border-b border-gray-100 last:border-b-0">
                     <i class="fas fa-user-tie mr-2 text-blue-400"></i>
                     <span>姓名: ${teacher.name || 'N/A'}, 邮箱: ${teacher.email || 'N/A'}</span>
@@ -1182,9 +1673,14 @@
         });
     }
 
+    function loadLessonDetails(lessonId) {
+        loadStudentsForLesson(lessonId);
+        loadTeachersForLesson(lessonId);
+    }
+
     function openSelectClassModal(teacherId, teacherName, currentClassId) {
-        currentTeacherId = teacherId;
-        currentTeacherName = teacherName;
+        currentTeacherIdForClass = teacherId;
+        currentTeacherNameForClass = teacherName;
         $("#select-class-modal-title").text(`为 ${teacherName} 选班`);
         const $classList = $("#modal-class-list");
         $classList.empty();
@@ -1193,6 +1689,8 @@
             $classList.html('<p class="text-gray-600 text-center">没有可用的班级。</p>');
             $("#select-class-modal-save-btn").prop('disabled', true);
         } else {
+            $classList.append('<label class="inline-flex items-center mt-3 p-2 rounded-md hover:bg-blue-50 cursor-pointer transition-all w-full"><input type="radio" class="form-radio h-5 w-5 text-blue-600" name="selectedClass" value="" disabled selected><span class="ml-2 text-gray-700">请选择班级</span></label>');
+
             allClassesMap.forEach((className, classId) => {
                 const isChecked = classId === currentClassId ? 'checked' : '';
                 $classList.append(`
@@ -1220,7 +1718,7 @@
 
         $.post("/Anotherview/api/adminInfo", {
             action: "updateTeacherClasses",
-            teacherId: currentTeacherId,
+            teacherId: currentTeacherIdForClass,
             classIds: selectedClassId
         }, function (response) {
             if (response.success) {
@@ -1239,48 +1737,9 @@
 
     function closeSelectClassModal() {
         $("#select-class-modal").addClass("hidden").removeClass("flex");
-        currentTeacherId = null;
-        currentTeacherName = null;
+        currentTeacherIdForClass = null;
+        currentTeacherNameForClass = null;
     }
-
-    function openAddClassModal() {
-        $("#new-class-name").val('');
-        $("#add-class-modal").removeClass("hidden").addClass("flex");
-    }
-
-    function closeAddClassModal() {
-        $("#add-class-modal").addClass("hidden").removeClass("flex");
-    }
-
-    function saveNewClass() {
-        const newClassName = $("#new-class-name").val().trim();
-        if (!newClassName) {
-            showNotification("班级名称不能为空！", "warning");
-            return;
-        }
-
-        showNotification("正在添加班级...", "info");
-        $("#add-class-modal button.bg-blue-500").prop('disabled', true);
-
-        $.post("/Anotherview/api/adminInfo", {
-            action: "addClass",
-            className: newClassName
-        }, function (response) {
-            if (response.success) {
-                showNotification("班级添加成功！", "success");
-                closeAddClassModal();
-                loadClasses();
-                loadAllClasses();
-            } else {
-                showNotification("班级添加失败: " + response.message, "error");
-            }
-            $("#add-class-modal button.bg-blue-500").prop('disabled', false);
-        }).fail((xhr) => {
-            showNotification('班级添加失败: ' + (xhr.responseJSON ? xhr.responseJSON.message : xhr.responseText), "error");
-            $("#add-class-modal button.bg-blue-500").prop('disabled', false);
-        });
-    }
-
 
     function showNotification(message, type = 'info') {
         const existingNotification = document.getElementById('custom-notification');
@@ -1377,6 +1836,94 @@
                 return {text: difficulty || '未知', class: ''};
         }
     }
+
+    $(document).ready(function () {
+        animateEntranceSequence();
+
+        $.when(
+            loadAllClasses(),
+            loadAllTeachers(),
+            loadSemesters()
+        ).done(function () {
+            $.get("/Anotherview/api/adminInfo", function (response) {
+                if (response.success && response.admin) {
+                    const admin = response.admin;
+                    $("#username").text(admin.name);
+                    $("#dashboard-admin-name").text(admin.name);
+                    showNotification("管理员信息加载成功！", "success");
+                    navigateTo('dashboard');
+                } else {
+                    showNotification("无法获取管理员信息，请重新登录", "error");
+                    setTimeout(() => {
+                        window.location.href = "/Anotherview/html/admin/admin-login.html";
+                    }, 2000);
+                }
+            }).fail((xhr) => {
+                const errorMessage = xhr.responseJSON ? xhr.responseJSON.message : xhr.responseText || "未知错误";
+                showNotification("无法获取管理员信息: " + errorMessage + "，请重新登录", "error");
+                setTimeout(() => {
+                    window.location.href = "/Anotherview/html/admin/admin-login.html";
+                }, 2000);
+            });
+        }).fail(function (error) {
+            console.error("Error loading initial data:", error);
+            showNotification("初始化数据加载失败，部分功能可能受限。", "error");
+        });
+
+
+        $("#question-type-filter, #question-difficulty-filter").on('change', function () {
+            loadQuestions();
+        });
+
+        $("#question-search-input").on('input', function () {
+            clearTimeout(this.searchTimer);
+            this.searchTimer = setTimeout(() => {
+                loadQuestions();
+            }, 300);
+        });
+
+        $("#lesson-id-filter").on('input', function () {
+            clearTimeout(this.lessonIdTimer);
+            this.lessonIdTimer = setTimeout(() => {
+                loadQuestions();
+            }, 300);
+        });
+
+        $("#teacher-name-filter, #teacher-email-filter").on('input', function () {
+            clearTimeout(this.filterTimer);
+            this.filterTimer = setTimeout(() => {
+                renderTeachers(allTeachersData);
+            }, 300);
+        });
+
+        $("#teacher-search-input").on('input', function () {
+            clearTimeout(this.searchTimer);
+            this.searchTimer = setTimeout(() => {
+                renderTeachers(allTeachersData);
+            }, 300);
+        });
+
+        $("#lesson-title-filter, #lesson-teacher-filter, #lesson-semester-filter").on('input', function () {
+            clearTimeout(this.filterTimer);
+            this.filterTimer = setTimeout(() => {
+                renderLessons(allLessonsData);
+            }, 300);
+        });
+
+        $("#lesson-search-input").on('input', function () {
+            clearTimeout(this.searchTimer);
+            this.searchTimer = setTimeout(() => {
+                renderLessons(allLessonsData);
+            }, 300);
+        });
+
+        $(".sidebar-button").removeClass("active").attr("aria-current", "false");
+        $('.sidebar-button').each(function () {
+            if ($(this).attr('onclick').includes("navigateTo('dashboard')")) {
+                $(this).addClass('active').attr("aria-current", "page");
+            }
+        });
+    });
 </script>
 
 </body>
