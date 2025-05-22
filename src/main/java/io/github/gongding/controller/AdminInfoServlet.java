@@ -25,6 +25,7 @@ import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -288,8 +289,49 @@ public class AdminInfoServlet extends HttpServlet {
                     responseMap.put("message", "获取课程教师数据时发生内部错误。");
                 }
             }
-        } else {
-            // This else block is for unrecognized actions after the initial session check.
+        }
+        else if ("getStudents".equals(action)) {
+            try {
+                List<StudentEntity> allStudents = studentService.getAllStudents();
+                responseMap.put("success", true);
+                responseMap.put("students", allStudents);
+                responseMap.put("message", "所有学生数据加载成功。");
+                logger.debug("成功获取所有学生，共 {} 名学生。", allStudents.size());
+            } catch (Exception e) {
+                logger.error("获取所有学生数据时发生异常。", e);
+                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                responseMap.put("success", false);
+                responseMap.put("message", "获取所有学生数据时发生内部错误。");
+            }
+        } else if ("getStudentLessons".equals(action)) {
+            String studentIdParam = request.getParameter("studentId");
+            if (studentIdParam == null || studentIdParam.isEmpty()) {
+                logger.warn("请求缺少 studentId 参数，用于获取学生课程。");
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                responseMap.put("success", false);
+                responseMap.put("message", "缺少学生ID参数。");
+            } else {
+                try {
+                    int studentId = Integer.parseInt(studentIdParam);
+                    List<Integer> associatedLessonIds = studentService.getAssociatedLessonIds(studentId);
+                    responseMap.put("success", true);
+                    responseMap.put("associatedLessonIds", associatedLessonIds);
+                    responseMap.put("message", "学生关联课程数据加载成功。");
+                    logger.debug("成功获取学生 ID {} 关联的 {} 门课程ID。", studentId, associatedLessonIds.size());
+                } catch (NumberFormatException e) {
+                    logger.warn("获取学生课程时 studentId 参数格式无效: {}", studentIdParam, e);
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    responseMap.put("success", false);
+                    responseMap.put("message", "学生ID参数格式无效。");
+                } catch (Exception e) {
+                    logger.error("获取学生关联课程数据时发生异常，学生ID: {}", studentIdParam, e);
+                    response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                    responseMap.put("success", false);
+                    responseMap.put("message", "获取学生关联课程数据时发生内部错误。");
+                }
+            }
+        }
+        else {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             responseMap.put("success", false);
             responseMap.put("message", "不支持的 GET 请求动作。");
@@ -341,6 +383,8 @@ public class AdminInfoServlet extends HttpServlet {
                                 .filter(s -> !s.isEmpty())
                                 .map(Integer::parseInt)
                                 .collect(Collectors.toList());
+                    } else {
+                        classIds = Collections.emptyList();
                     }
 
                     boolean success = teacherService.updateTeacherClasses(teacherId, classIds);
@@ -463,7 +507,54 @@ public class AdminInfoServlet extends HttpServlet {
                     responseMap.put("message", "指定课程教师时发生内部错误。");
                 }
             }
-        } else {
+        }
+        else if ("updateStudentLessons".equals(action)) {
+            String studentIdStr = request.getParameter("studentId");
+            String lessonIdsStr = request.getParameter("lessonIds");
+
+            if (studentIdStr == null || studentIdStr.isEmpty()) {
+                logger.warn("更新学生课程关联请求缺少 studentId 参数。");
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                responseMap.put("success", false);
+                responseMap.put("message", "缺少学生ID参数。");
+            } else {
+                try {
+                    int studentId = Integer.parseInt(studentIdStr);
+                    List<Integer> lessonIds = null;
+                    if (lessonIdsStr != null && !lessonIdsStr.isEmpty()) {
+                        lessonIds = Arrays.stream(lessonIdsStr.split(","))
+                                .map(String::trim)
+                                .filter(s -> !s.isEmpty())
+                                .map(Integer::parseInt)
+                                .collect(Collectors.toList());
+                    } else {
+                        lessonIds = Collections.emptyList();
+                    }
+
+                    boolean success = studentService.updateStudentLessons(studentId, lessonIds);
+                    if (success) {
+                        responseMap.put("success", true);
+                        responseMap.put("message", "学生课程关联更新成功。");
+                        logger.info("学生 ID {} 的课程关联更新成功。", studentId);
+                    } else {
+                        responseMap.put("success", false);
+                        responseMap.put("message", "学生课程关联更新失败。");
+                        logger.warn("学生 ID {} 的课程关联更新失败。", studentId);
+                    }
+                } catch (NumberFormatException e) {
+                    logger.warn("更新学生课程关联请求中参数格式无效: studentId={}, lessonIds={}", studentIdStr, lessonIdsStr, e);
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    responseMap.put("success", false);
+                    responseMap.put("message", "参数格式无效。");
+                } catch (Exception e) {
+                    logger.error("更新学生课程关联时发生异常，学生ID: {}", studentIdStr, e);
+                    response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                    responseMap.put("success", false);
+                    responseMap.put("message", "更新学生课程关联时发生内部错误。");
+                }
+            }
+        }
+        else {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             responseMap.put("success", false);
             responseMap.put("message", "不支持的 POST 请求动作。");
