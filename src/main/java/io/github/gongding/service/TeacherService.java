@@ -7,6 +7,8 @@ import io.github.gongding.util.PasswordUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+
 public class TeacherService {
     private static final Logger logger = LoggerFactory.getLogger(TeacherService.class);
     private TeacherDao teacherDao =new TeacherDao();
@@ -89,6 +91,53 @@ public class TeacherService {
         } catch (Exception e) {
             logger.error("教师 {} 登录过程中发生异常。", name, e);
             return null;
+        }
+    }
+
+    /**
+     * 获取所有教师的业务逻辑
+     * @return 教师实体列表
+     */
+    public List<TeacherEntity> getAllTeachers() {
+        logger.info("尝试获取所有教师。");
+        try {
+            List<TeacherEntity> teachers = teacherDao.getAllTeachers();
+            logger.debug("成功从 DAO 获取 {} 个教师。", teachers.size());
+            return teachers;
+        } catch (Exception e) {
+            logger.error("获取所有教师时发生异常。", e);
+            return null;
+        }
+    }
+
+    /**
+     * 获取教师已关联的班级ID列表的业务逻辑
+     * @param teacherId 教师ID
+     * @return 班级ID列表
+     */
+    public List<Integer> getAssociatedClassIds(int teacherId) {
+        logger.info("尝试获取教师 ID {} 已关联的班级ID列表。", teacherId);
+        try {
+            return teacherDao.getAssociatedClassIds(teacherId);
+        } catch (Exception e) {
+            logger.error("获取教师 ID {} 关联班级时发生异常。", teacherId, e);
+            return null;
+        }
+    }
+
+    /**
+     * 更新教师的班级关联的业务逻辑
+     * @param teacherId 教师ID
+     * @param classIds 要关联的班级ID列表
+     * @return 是否成功更新
+     */
+    public boolean updateTeacherClasses(int teacherId, List<Integer> classIds) {
+        logger.info("尝试更新教师 ID {} 的班级关联。", teacherId);
+        try {
+            return teacherDao.updateTeacherClasses(teacherId, classIds);
+        } catch (Exception e) {
+            logger.error("更新教师 ID {} 班级关联时发生异常。", teacherId, e);
+            return false;
         }
     }
 }
