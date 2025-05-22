@@ -202,4 +202,42 @@ public class ClassDao {
         logger.debug("完成查询所有班级列表操作。");
         return classes;
     }
+
+    /**
+     * 添加新班级
+     * @param classEntity 班级实体
+     * @return 是否成功添加
+     */
+    public boolean addClass(ClassEntity classEntity) {
+        logger.info("尝试添加新班级，名称: {}", classEntity.getName());
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        boolean success = false;
+
+        try {
+            conn = DBUtils.getConnection();
+            String sql = "INSERT INTO class (name) VALUES(?)";
+            logger.debug("执行 SQL (添加班级): {} with name = '{}'", sql, classEntity.getName());
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, classEntity.getName());
+
+            int affectedRows = pstmt.executeUpdate();
+            success = affectedRows > 0;
+            logger.debug("添加班级影响行数: {}", affectedRows);
+
+            if (success) {
+                logger.info("成功添加新班级，名称: {}", classEntity.getName());
+            } else {
+                logger.warn("添加新班级失败，名称: {}，可能数据库操作未成功。", classEntity.getName());
+            }
+
+        } catch (SQLException e) {
+            logger.error("添加新班级时发生数据库异常，名称: {}", classEntity.getName(), e);
+        } finally {
+            DBUtils.close(conn, pstmt);
+            logger.debug("关闭数据库资源。");
+        }
+        logger.debug("完成添加新班级操作，名称: {}，结果: {}", classEntity.getName(), success ? "成功" : "失败");
+        return success;
+    }
 }
