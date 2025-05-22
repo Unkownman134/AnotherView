@@ -26,4 +26,33 @@ public class ClassService {
             return null;
         }
     }
+
+    /**
+     * 添加新班级的业务逻辑
+     * @param className 班级名称
+     * @return 如果添加成功返回true，如果班级已存在返回false
+     */
+    public boolean addClass(String className) {
+        logger.info("尝试添加新班级，名称: {}", className);
+        try {
+            if (classDao.getClassIdByClassName(className) != -1) {
+                logger.warn("添加班级失败，班级名称 {} 已存在。", className);
+                return false;
+            }
+
+            ClassEntity newClass = new ClassEntity();
+            newClass.setName(className);
+            boolean success = classDao.addClass(newClass);
+
+            if (success) {
+                logger.info("班级 {} 添加成功。", className);
+            } else {
+                logger.error("班级 {} 添加失败，数据库操作可能出现问题。", className);
+            }
+            return success;
+        } catch (Exception e) {
+            logger.error("添加班级 {} 过程中发生异常。", className, e);
+            return false;
+        }
+    }
 }
