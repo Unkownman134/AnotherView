@@ -284,7 +284,52 @@ public class StudentDao {
             DBUtils.close(conn, pstmt, rs);
             logger.debug("关闭数据库资源。");
         }
-        logger.debug("完成根据班级ID列表 {} 获取学生列表操作。", classIds);
+        logger.debug("完成根据班级ID列表 {} 查询学生列表操作。", classIds);
+        return students;
+    }
+
+    /**
+     * 根据课程ID获取学生列表
+     * @param lessonId 课程ID
+     * @return 学生实体列表
+     */
+    public List<StudentEntity> getStudentsByLessonId(int lessonId) {
+        logger.debug("尝试根据课程ID {} 获取学生列表。", lessonId);
+        List<StudentEntity> students = new ArrayList<>();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        try {
+            conn = DBUtils.getConnection();
+            String sql = "SELECT s.student_id, s.student_number, s.name, s.email, s.school, s.classof " +
+                    "FROM student s " +
+                    "JOIN lesson_student ls ON s.student_id = ls.student_id " +
+                    "WHERE ls.lesson_id = ?";
+            logger.debug("执行 SQL: {} with lessonId = {}", sql, lessonId);
+
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, lessonId);
+            rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                StudentEntity student = new StudentEntity();
+                student.setId(rs.getInt("student_id"));
+                student.setStudentNumber(rs.getString("student_number"));
+                student.setName(rs.getString("name"));
+                student.setEmail(rs.getString("email"));
+                student.setSchool(rs.getString("school"));
+                student.setClassof(rs.getString("classof"));
+                students.add(student);
+                logger.trace("找到课程关联学生: ID = {}, 学号 = {}, 姓名 = {}", student.getId(), student.getStudentNumber(), student.getName());
+            }
+            logger.debug("成功找到 {} 个与课程 ID {} 关联的学生。", students.size(), lessonId);
+        } catch (SQLException e) {
+            logger.error("根据课程ID {} 获取学生列表时发生数据库异常。", lessonId, e);
+        } finally {
+            DBUtils.close(conn, pstmt, rs);
+            logger.debug("关闭数据库资源。");
+        }
         return students;
     }
 }
