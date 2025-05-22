@@ -6,9 +6,11 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.github.gongding.entity.AdminEntity;
 import io.github.gongding.entity.ClassEntity;
 import io.github.gongding.entity.QuestionEntity;
+import io.github.gongding.entity.SemesterEntity; // 导入 SemesterEntity
 import io.github.gongding.entity.TeacherEntity;
 import io.github.gongding.service.ClassService;
 import io.github.gongding.service.QuestionService;
+import io.github.gongding.service.SemesterService; // 导入 SemesterService
 import io.github.gongding.service.TeacherService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -34,6 +36,7 @@ public class AdminInfoServlet extends HttpServlet {
     private final QuestionService questionService = new QuestionService();
     private final TeacherService teacherService = new TeacherService();
     private final ClassService classService = new ClassService();
+    private final SemesterService semesterService = new SemesterService(); // 实例化 SemesterService
 
     public AdminInfoServlet() {
         logger.debug("AdminInfoServlet 构造方法执行。");
@@ -129,6 +132,19 @@ public class AdminInfoServlet extends HttpServlet {
                     responseMap.put("success", false);
                     responseMap.put("message", "获取教师关联班级数据时发生内部错误。");
                 }
+            }
+        } else if ("getSemesters".equals(action)) {
+            try {
+                List<SemesterEntity> semesters = semesterService.getAllSemesters();
+                responseMap.put("success", true);
+                responseMap.put("semesters", semesters);
+                responseMap.put("message", "学期数据加载成功。");
+                logger.debug("成功获取 {} 个学期。", semesters.size());
+            } catch (Exception e) {
+                logger.error("获取学期数据时发生异常。", e);
+                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                responseMap.put("success", false);
+                responseMap.put("message", "获取学期数据时发生内部错误。");
             }
         } else {
             AdminEntity sessionAdmin = (AdminEntity) session.getAttribute("admin");
