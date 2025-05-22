@@ -464,8 +464,34 @@
                 <i class="fas fa-calendar-alt text-blue-500 mr-3" aria-hidden="true"></i>
                 <span>学期管理</span>
             </h2>
-            <div class="text-center py-8 text-gray-500">
-                <p>学期管理内容将在此处显示。</p>
+            <div class="controls mb-6 flex items-end gap-4">
+            </div>
+            <div class="overflow-x-auto rounded-lg border border-gray-200 shadow-sm" role="region"
+                 aria-labelledby="semester-list-heading">
+                <h3 id="semester-list-heading" class="sr-only">学期列表</h3>
+                <table class="min-w-full bg-white">
+                    <thead>
+                    <tr class="bg-gradient-to-r from-blue-50 to-blue-100 text-gray-600 uppercase text-sm leading-normal">
+                        <th class="py-3 px-6 text-left" scope="col">学期ID</th>
+                        <th class="py-3 px-6 text-left" scope="col">名称</th>
+                        <th class="py-3 px-6 text-left" scope="col">开始日期</th>
+                        <th class="py-3 px-6 text-left" scope="col">结束日期</th>
+                        <th class="py-3 px-6 text-left" scope="col">创建时间</th>
+                    </tr>
+                    </thead>
+                    <tbody id="semester-list" class="text-gray-600 text-sm">
+                    </tbody>
+                </table>
+                <div id="loading-semesters-message" class="text-center py-8 text-gray-500" style="display: none;"
+                     aria-live="polite">
+                    <div class="loader mb-3" role="status" aria-label="加载中"></div>
+                    <p>正在加载学期数据...</p>
+                </div>
+                <div id="no-semesters-data-message" class="text-center py-8 text-gray-500" style="display: none;"
+                     aria-live="polite">
+                    <i class="fas fa-calendar-times text-4xl mb-2 text-gray-300" aria-hidden="true"></i>
+                    <p>没有找到学期数据。</p>
+                </div>
             </div>
         </section>
 
@@ -509,6 +535,7 @@
     let currentTeacherId = null;
     let currentTeacherName = null;
     let allTeachersData = [];
+    let allSemestersData = [];
 
     $(document).ready(function () {
         animateEntranceSequence();
@@ -519,7 +546,7 @@
                 $("#username").text(admin.name);
                 $("#dashboard-admin-name").text(admin.name);
                 showNotification("管理员信息加载成功！", "success");
-                navigateTo('dashboard'); // Default to dashboard
+                navigateTo('dashboard');
             } else {
                 showNotification("无法获取管理员信息，请重新登录", "error");
                 setTimeout(() => {
@@ -613,7 +640,6 @@
 
         if (page === 'dashboard') {
             $("#dashboard-section").show();
-            // Removed loadDashboardSummary() call
         } else if (page === 'class-management') {
             $("#class-management-section").show();
         } else if (page === 'teacher-management') {
@@ -628,6 +654,7 @@
             loadQuestions();
         } else if (page === 'semester-management') {
             $("#semester-management-section").show();
+            loadSemesters();
         } else if (page === 'profile') {
             $("#personal-info-section").show();
             loadPersonalInfo();
@@ -868,6 +895,65 @@
         }).fail((xhr) => {
             console.error("Error fetching all classes:", xhr);
             showNotification('加载班级列表失败: ' + (xhr.responseJSON ? xhr.responseJSON.message : xhr.responseText), "error");
+        });
+    }
+
+    function loadSemesters() {
+        $("#loading-semesters-message").show();
+        $("#no-semesters-data-message").hide();
+        $("#semester-list").empty();
+
+        for (let i = 0; i < 5; i++) {
+            $("#semester-list").append(`
+                <tr>
+                    <td colspan="5" class="py-4"> <div class="shimmer w-full h-10 rounded-md"></div></td>
+                </tr>
+            `);
+        }
+
+        $.get("/Anotherview/api/adminInfo", {action: "getSemesters"}, function (response) {
+            $("#semester-list").empty();
+            $("#loading-semesters-message").hide();
+
+            if (response.success && response.semesters && response.semesters.length > 0) {
+                allSemestersData = response.semesters;
+                renderSemesters(allSemestersData);
+            } else {
+                $("#no-semesters-data-message").show();
+            }
+        }).fail((xhr) => {
+            $("#semester-list").empty();
+            $("#loading-semesters-message").hide();
+            $("#no-semesters-data-message").show().find('p').text('加载学期数据失败。');
+            showNotification('加载学期数据失败: ' + (xhr.responseJSON ? xhr.responseJSON.message : xhr.responseText), "error");
+        });
+    }
+
+    function renderSemesters(semesters) {
+        const $semesterListTbody = $("#semester-list");
+        $semesterListTbody.empty();
+
+        if (!semesters || semesters.length === 0) {
+            $("#no-semesters-data-message").show();
+            return;
+        } else {
+            $("#no-semesters-data-message").hide();
+        }
+
+        semesters.forEach((semester, index) => {
+            const row = $(`
+                <tr class="border-b border-gray-200 hover:bg-blue-50" data-index="${index}">
+                    <td class="py-3 px-6 text-left font-semibold">${semester.id || 'N\A'}</td>
+                    <td class="py-3 px-6 text-left">${semester.name || 'N\A'}</td>
+                    <td class="py-3 px-6 text-left">${semester.startDate || 'N\A'}</td>
+                    <td class="py-3 px-6 text-left">${semester.endDate || 'N\A'}</td>
+                    <td class="py-3 px-6 text-left">${semester.createdAt ? formatDisplayDateTime(semester.createdAt) : 'N\A'}</td>
+                </tr>
+            `);
+            $semesterListTbody.append(row);
+            setTimeout(() => {
+                row.addClass('fade-in');
+            }, 50 * index);
         });
     }
 
