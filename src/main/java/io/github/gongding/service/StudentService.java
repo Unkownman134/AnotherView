@@ -116,4 +116,19 @@ public class StudentService {
             return null;
         }
     }
+
+    /**
+     * 根据课程ID获取学生列表的业务逻辑
+     * @param lessonId 课程ID
+     * @return 学生实体列表
+     */
+    public List<StudentEntity> getStudentsByLessonId(int lessonId) {
+        logger.info("尝试获取课程 ID {} 的学生列表。", lessonId);
+        try {
+            return studentDao.getStudentsByLessonId(lessonId);
+        } catch (Exception e) {
+            logger.error("获取课程 ID {} 学生列表时发生异常。", lessonId, e);
+            return null;
+        }
+    }
 }
