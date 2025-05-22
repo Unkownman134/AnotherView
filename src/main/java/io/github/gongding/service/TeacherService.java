@@ -140,4 +140,19 @@ public class TeacherService {
             return false;
         }
     }
+
+    /**
+     * 根据班级ID获取教师列表的业务逻辑
+     * @param classId 班级ID
+     * @return 教师实体列表
+     */
+    public List<TeacherEntity> getTeachersByClassId(int classId) {
+        logger.info("尝试获取班级 ID {} 的教师列表。", classId);
+        try {
+            return teacherDao.getTeachersByClassId(classId);
+        } catch (Exception e) {
+            logger.error("获取班级 ID {} 教师列表时发生异常。", classId, e);
+            return null;
+        }
+    }
 }
