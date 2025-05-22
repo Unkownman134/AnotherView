@@ -131,4 +131,51 @@ public class StudentService {
             return null;
         }
     }
+
+    /**
+     * 获取所有学生的业务逻辑
+     * @return 学生实体列表
+     */
+    public List<StudentEntity> getAllStudents() {
+        logger.info("尝试获取所有学生。");
+        try {
+            List<StudentEntity> students = studentDao.getAllStudents();
+            logger.debug("成功从 DAO 获取 {} 个学生。", students.size());
+            return students;
+        } catch (Exception e) {
+            logger.error("获取所有学生时发生异常。", e);
+            return null;
+        }
+    }
+
+    /**
+     * 获取学生已关联的课程ID列表的业务逻辑
+     * @param studentId 学生ID
+     * @return 课程ID列表
+     */
+    public List<Integer> getAssociatedLessonIds(int studentId) {
+        logger.info("尝试获取学生 ID {} 已关联的课程ID列表。", studentId);
+        try {
+            return studentDao.getAssociatedLessonIds(studentId);
+        } catch (Exception e) {
+            logger.error("获取学生 ID {} 关联课程时发生异常。", studentId, e);
+            return null;
+        }
+    }
+
+    /**
+     * 更新学生的课程关联的业务逻辑
+     * @param studentId 学生ID
+     * @param lessonIds 要关联的课程ID列表
+     * @return 是否成功更新
+     */
+    public boolean updateStudentLessons(int studentId, List<Integer> lessonIds) {
+        logger.info("尝试更新学生 ID {} 的课程关联。", studentId);
+        try {
+            return studentDao.updateStudentLessons(studentId, lessonIds);
+        } catch (Exception e) {
+            logger.error("更新学生 ID {} 课程关联时发生异常。", studentId, e);
+            return false;
+        }
+    }
 }
