@@ -166,4 +166,40 @@ public class ClassDao {
         }
         return classId;
     }
+
+    /**
+     * 获取所有班级实体
+     * @return 班级实体列表
+     */
+    public List<ClassEntity> getAllClasses() {
+        logger.debug("尝试查询所有班级列表。");
+        List<ClassEntity> classes = new ArrayList<>();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        try {
+            conn = DBUtils.getConnection();
+            String sql = "SELECT class_id, name FROM class";
+            logger.debug("执行 SQL: {}", sql);
+            pstmt = conn.prepareStatement(sql);
+            rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                ClassEntity cls = new ClassEntity();
+                cls.setId(rs.getInt("class_id"));
+                cls.setName(rs.getString("name"));
+                classes.add(cls);
+                logger.trace("找到班级: ID = {}, Name = '{}'", cls.getId(), cls.getName());
+            }
+            logger.debug("成功找到 {} 个班级。", classes.size());
+        } catch (SQLException e) {
+            logger.error("查询所有班级列表时发生数据库异常。", e);
+        } finally {
+            DBUtils.close(conn, pstmt, rs);
+            logger.debug("关闭数据库资源。");
+        }
+        logger.debug("完成查询所有班级列表操作。");
+        return classes;
+    }
 }
