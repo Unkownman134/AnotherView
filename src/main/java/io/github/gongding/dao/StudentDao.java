@@ -332,4 +332,145 @@ public class StudentDao {
         }
         return students;
     }
+
+    /**
+     * 获取所有学生实体
+     * @return 学生实体列表
+     */
+    public List<StudentEntity> getAllStudents() {
+        logger.debug("尝试获取所有学生列表。");
+        List<StudentEntity> students = new ArrayList<>();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        try {
+            conn = DBUtils.getConnection();
+            String sql = "SELECT student_id, student_number, name, email, school, classof, last_login, created_at FROM student";
+            logger.debug("执行 SQL: {}", sql);
+            pstmt = conn.prepareStatement(sql);
+            rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                students.add(buildStudentEntity(rs));
+            }
+            logger.debug("成功找到 {} 个学生。", students.size());
+        } catch (SQLException e) {
+            logger.error("获取所有学生列表时发生数据库异常。", e);
+        } finally {
+            DBUtils.close(conn, pstmt, rs);
+            logger.debug("关闭数据库资源。");
+        }
+        return students;
+    }
+
+    /**
+     * 获取学生已关联的课程ID列表
+     * @param studentId 学生ID
+     * @return 课程ID列表
+     */
+    public List<Integer> getAssociatedLessonIds(int studentId) {
+        logger.debug("尝试获取学生 ID {} 已关联的课程ID列表。", studentId);
+        List<Integer> lessonIds = new ArrayList<>();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        try {
+            conn = DBUtils.getConnection();
+            String sql = "SELECT lesson_id FROM lesson_student WHERE student_id = ?";
+            logger.debug("执行 SQL: {} with studentId = {}", sql, studentId);
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, studentId);
+            rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                lessonIds.add(rs.getInt("lesson_id"));
+            }
+            logger.debug("成功找到学生 ID {} 关联的 {} 门课程。", studentId, lessonIds.size());
+        } catch (SQLException e) {
+            logger.error("获取学生 ID {} 关联课程时发生数据库异常。", studentId, e);
+        } finally {
+            DBUtils.close(conn, pstmt, rs);
+            logger.debug("关闭数据库资源。");
+        }
+        return lessonIds;
+    }
+
+    /**
+     * 更新学生的课程关联
+     * @param studentId 学生ID
+     * @param lessonIds 要关联的课程ID列表
+     * @return 是否成功更新
+     */
+    public boolean updateStudentLessons(int studentId, List<Integer> lessonIds) {
+        logger.info("尝试更新学生 ID {} 的课程关联。", studentId);
+        Connection conn = null;
+        PreparedStatement deletePstmt = null;
+        PreparedStatement insertPstmt = null;
+        boolean success = false;
+
+        try {
+            conn = DBUtils.getConnection();
+
+            String deleteSql = "DELETE FROM lesson_student WHERE student_id = ?";
+            logger.debug("执行 SQL (删除旧关联): {}", deleteSql);
+            deletePstmt = conn.prepareStatement(deleteSql);
+            deletePstmt.setInt(1, studentId);
+            deletePstmt.executeUpdate();
+            logger.debug("删除学生 ID {} 的旧课程关联。", studentId);
+
+            if (lessonIds != null && !lessonIds.isEmpty()) {
+                String insertSql = "INSERT INTO lesson_student (lesson_id, student_id) VALUES (?, ?)";
+                logger.debug("执行 SQL (插入新关联): {}", insertSql);
+                insertPstmt = conn.prepareStatement(insertSql);
+                for (Integer lessonId : lessonIds) {
+                    insertPstmt.setInt(1, lessonId);
+                    insertPstmt.setInt(2, studentId);
+                    insertPstmt.addBatch();
+                }
+                int[] affectedRows = insertPstmt.executeBatch();
+                logger.debug("插入新关联影响行数: {}", affectedRows.length);
+            }
+
+            success = true;
+            logger.info("成功更新学生 ID {} 的课程关联。", studentId);
+        } catch (SQLException e) {
+            logger.error("更新学生 ID {} 课程关联时发生数据库异常。", studentId, e);
+        } finally {
+            try {
+                if (deletePstmt != null) deletePstmt.close();
+                if (insertPstmt != null) insertPstmt.close();
+            } catch (SQLException closeEx) {
+                logger.error("关闭 PreparedStatement 时发生异常。", closeEx);
+            }
+            DBUtils.close(conn, null, null);
+            logger.debug("关闭数据库资源。");
+        }
+        return success;
+    }
+
+
+    /**
+     * 辅助方法：从ResultSet构建StudentEntity
+     * @param rs ResultSet对象
+     * @return 构建好的StudentEntity
+     * @throws SQLException 如果访问ResultSet发生错误
+     */
+    private StudentEntity buildStudentEntity(ResultSet rs) throws SQLException {
+        StudentEntity student = new StudentEntity();
+        student.setId(rs.getInt("student_id"));
+        student.setStudentNumber(rs.getString("student_number"));
+        student.setName(rs.getString("name"));
+        student.setEmail(rs.getString("email"));
+        student.setSchool(rs.getString("school"));
+        student.setClassof(rs.getString("classof"));
+        student.setPasswordSalt(rs.getString("password_salt"));
+        student.setPasswordHash(rs.getString("password_hash"));
+        Timestamp lastLoginTs = rs.getTimestamp("last_login");
+        student.setLastLogin(lastLoginTs != null ? lastLoginTs.toLocalDateTime() : null);
+        Timestamp createdAtTs = rs.getTimestamp("created_at");
+        student.setCreatedAt(createdAtTs != null ? createdAtTs.toLocalDateTime() : null);
+        return student;
+    }
 }
