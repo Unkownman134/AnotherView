@@ -332,4 +332,43 @@ public class TeacherDao {
         logger.debug("完成更新教师 ID {} 班级关联操作，结果: {}", teacherId, success ? "成功" : "失败");
         return success;
     }
+
+    /**
+     * 根据班级ID获取教师列表
+     * @param classId 班级ID
+     * @return 教师实体列表
+     */
+    public List<TeacherEntity> getTeachersByClassId(int classId) {
+        logger.debug("尝试根据班级ID {} 获取教师列表。", classId);
+        List<TeacherEntity> teachers = new ArrayList<>();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        try {
+            conn = DBUtils.getConnection();
+            String sql = "SELECT t.teacher_id, t.name, t.email FROM teacher t JOIN class_teacher ct ON t.teacher_id = ct.teacher_id WHERE ct.class_id = ?";
+            logger.debug("执行 SQL: {} with classId = {}", sql, classId);
+
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, classId);
+            rs = pstmt.executeQuery();
+            while (rs.next()) {
+                TeacherEntity teacher = new TeacherEntity();
+                teacher.setId(rs.getInt("teacher_id"));
+                teacher.setName(rs.getString("name"));
+                teacher.setEmail(rs.getString("email"));
+                teachers.add(teacher);
+                logger.trace("找到班级关联教师: ID = {}, 姓名 = {}", teacher.getId(), teacher.getName());
+            }
+            logger.debug("成功找到 {} 个与班级 ID {} 关联的教师。", teachers.size(), classId);
+        } catch (SQLException e) {
+            logger.error("根据班级ID {} 获取教师列表时发生数据库异常。", classId, e);
+        } finally {
+            DBUtils.close(conn, pstmt, rs);
+            logger.debug("关闭数据库资源。");
+        }
+        logger.debug("完成根据班级ID {} 获取教师列表操作。", classId);
+        return teachers;
+    }
 }
