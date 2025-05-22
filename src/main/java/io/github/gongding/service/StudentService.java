@@ -7,6 +7,9 @@ import io.github.gongding.util.PasswordUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
+import java.util.List;
+
 public class StudentService {
     private static final Logger logger = LoggerFactory.getLogger(StudentService.class);
     private StudentDao studentDao = new StudentDao();
@@ -95,6 +98,21 @@ public class StudentService {
             }
         } catch (Exception e) {
             logger.error("学号 {} 登录过程中发生异常。", studentNumber, e);
+            return null;
+        }
+    }
+
+    /**
+     * 根据班级ID获取学生列表的业务逻辑
+     * @param classId 班级ID
+     * @return 学生实体列表
+     */
+    public List<StudentEntity> getStudentsByClassId(int classId) {
+        logger.info("尝试获取班级 ID {} 的学生列表。", classId);
+        try {
+            return studentDao.getStudentsByClassIds(Collections.singletonList(classId));
+        } catch (Exception e) {
+            logger.error("获取班级 ID {} 学生列表时发生异常。", classId, e);
             return null;
         }
     }
