@@ -4,7 +4,9 @@ import io.github.gongding.entity.TeacherEntity;
 import io.github.gongding.util.DBUtils;
 
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 import java.util.TimeZone;
 
 import org.slf4j.Logger;
@@ -168,6 +170,53 @@ public class TeacherDao {
     }
 
     /**
+     * 获取所有教师实体
+     * @return 教师实体列表
+     */
+    public List<TeacherEntity> getAllTeachers() {
+        logger.debug("尝试查询所有教师列表。");
+        List<TeacherEntity> teachers = new ArrayList<>();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        try {
+            conn = DBUtils.getConnection();
+            String sql = "SELECT teacher_id, name, email, last_login, created_at FROM teacher";
+            logger.debug("执行 SQL: {}", sql);
+            pstmt = conn.prepareStatement(sql);
+            rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                TeacherEntity teacher = new TeacherEntity();
+                teacher.setId(rs.getInt("teacher_id"));
+                teacher.setName(rs.getString("name"));
+                teacher.setEmail(rs.getString("email"));
+
+                Timestamp lastLoginTs = rs.getTimestamp("last_login");
+                if (lastLoginTs != null) {
+                    teacher.setLastLogin(lastLoginTs.toLocalDateTime());
+                }
+
+                Timestamp createdAtTs = rs.getTimestamp("created_at");
+                if (createdAtTs != null) {
+                    teacher.setCreatedAt(createdAtTs.toLocalDateTime());
+                }
+                teachers.add(teacher);
+                logger.trace("找到教师: ID = {}, Name = '{}'", teacher.getId(), teacher.getName());
+            }
+            logger.debug("成功找到 {} 个教师。", teachers.size());
+        } catch (SQLException e) {
+            logger.error("查询所有教师列表时发生数据库异常。", e);
+        } finally {
+            DBUtils.close(conn, pstmt, rs);
+            logger.debug("关闭数据库资源。");
+        }
+        logger.debug("完成查询所有教师列表操作。");
+        return teachers;
+    }
+
+    /**
      * 辅助方法：从数据库查询结果集中构建TeacherEntity对象。
      *
      * @param rs 包含教师数据的数据库查询结果集。
@@ -197,5 +246,90 @@ public class TeacherDao {
             throw e;
         }
         return teacher;
+    }
+
+    /**
+     * 获取教师已关联的班级ID列表
+     * @param teacherId 教师ID
+     * @return 班级ID列表
+     */
+    public List<Integer> getAssociatedClassIds(int teacherId) {
+        logger.debug("尝试获取教师 ID {} 已关联的班级ID列表。", teacherId);
+        List<Integer> classIds = new ArrayList<>();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        try {
+            conn = DBUtils.getConnection();
+            String sql = "SELECT class_id FROM class_teacher WHERE teacher_id = ?";
+            logger.debug("执行 SQL: {} with teacherId = {}", sql, teacherId);
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, teacherId);
+            rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                classIds.add(rs.getInt("class_id"));
+            }
+            logger.debug("成功获取教师 ID {} 关联的 {} 个班级ID。", teacherId, classIds.size());
+        } catch (SQLException e) {
+            logger.error("获取教师 ID {} 关联的班级ID列表时发生数据库异常。", teacherId, e);
+        } finally {
+            DBUtils.close(conn, pstmt, rs);
+            logger.debug("关闭数据库资源。");
+        }
+        return classIds;
+    }
+
+    /**
+     * 更新教师的班级关联
+     * @param teacherId 教师ID
+     * @param classIds 要关联的班级ID列表
+     * @return 是否成功更新
+     */
+    public boolean updateTeacherClasses(int teacherId, List<Integer> classIds) {
+        logger.info("尝试更新教师 ID {} 的班级关联。", teacherId);
+        Connection conn = null;
+        PreparedStatement deletePstmt = null;
+        PreparedStatement insertPstmt = null;
+        boolean success = false;
+
+        try {
+            conn = DBUtils.getConnection();
+            String deleteSql = "DELETE FROM class_teacher WHERE teacher_id = ?";
+            logger.debug("执行 SQL (删除现有关联): {} with teacherId = {}", deleteSql, teacherId);
+            deletePstmt = conn.prepareStatement(deleteSql);
+            deletePstmt.setInt(1, teacherId);
+            deletePstmt.executeUpdate();
+
+            if (classIds != null && !classIds.isEmpty()) {
+                String insertSql = "INSERT INTO class_teacher (teacher_id, class_id) VALUES (?, ?)";
+                logger.debug("执行 SQL (插入新关联): {}", insertSql);
+                insertPstmt = conn.prepareStatement(insertSql);
+                for (Integer classId : classIds) {
+                    insertPstmt.setInt(1, teacherId);
+                    insertPstmt.setInt(2, classId);
+                    insertPstmt.addBatch();
+                }
+                int[] affectedRows = insertPstmt.executeBatch();
+                logger.debug("插入新关联影响行数: {}", affectedRows.length);
+            }
+
+            success = true;
+            logger.info("成功更新教师 ID {} 的班级关联。", teacherId);
+        } catch (SQLException e) {
+            logger.error("更新教师 ID {} 班级关联时发生数据库异常。", teacherId, e);
+        } finally {
+            try {
+                if (deletePstmt != null) deletePstmt.close();
+                if (insertPstmt != null) insertPstmt.close();
+            } catch (SQLException closeEx) {
+                logger.error("关闭 PreparedStatement 时发生异常。", closeEx);
+            }
+            DBUtils.close(conn, null, null);
+            logger.debug("关闭数据库资源。");
+        }
+        logger.debug("完成更新教师 ID {} 班级关联操作，结果: {}", teacherId, success ? "成功" : "失败");
+        return success;
     }
 }
