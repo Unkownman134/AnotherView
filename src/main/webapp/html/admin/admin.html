@@ -485,8 +485,86 @@
                 <i class="fas fa-user-graduate text-blue-500 mr-3" aria-hidden="true"></i>
                 <span>学生管理</span>
             </h2>
-            <div class="text-center py-8 text-gray-500">
-                <p>学生管理内容将在此处显示。</p>
+            <div class="controls mb-6 flex flex-col sm:flex-row sm:items-end gap-4">
+                <div class="flex flex-col flex-grow">
+                    <label for="student-name-filter"
+                           class="block text-gray-700 text-sm font-bold mb-1 flex items-center">
+                        <i class="fas fa-filter text-blue-500 mr-2" aria-hidden="true"></i>
+                        筛选姓名:
+                    </label>
+                    <input type="text" id="student-name-filter"
+                           placeholder="输入学生姓名"
+                           class="shadow appearance-none border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                           aria-label="筛选学生姓名">
+                </div>
+
+                <div class="flex flex-col flex-grow">
+                    <label for="student-number-filter"
+                           class="block text-gray-700 text-sm font-bold mb-1 flex items-center">
+                        <i class="fas fa-filter text-blue-500 mr-2" aria-hidden="true"></i>
+                        筛选学号:
+                    </label>
+                    <input type="text" id="student-number-filter"
+                           placeholder="输入学生学号"
+                           class="shadow appearance-none border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                           aria-label="筛选学生学号">
+                </div>
+
+                <div class="flex flex-col flex-grow">
+                    <label for="student-class-filter"
+                           class="block text-gray-700 text-sm font-bold mb-1 flex items-center">
+                        <i class="fas fa-filter text-blue-500 mr-2" aria-hidden="true"></i>
+                        筛选班级:
+                    </label>
+                    <input type="text" id="student-class-filter"
+                           placeholder="输入学生班级"
+                           class="shadow appearance-none border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                           aria-label="筛选学生班级">
+                </div>
+
+                <div class="flex items-end flex-grow relative">
+                    <i class="fas fa-search absolute left-3 bottom-2 text-gray-400" aria-hidden="true"></i>
+                    <label for="student-search-input" class="sr-only">搜索学生</label>
+                    <input type="text" id="student-search-input"
+                           placeholder="搜索学生姓名、学号或班级..."
+                           class="shadow appearance-none border rounded-lg flex-grow py-2 pl-10 pr-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                           aria-label="搜索学生姓名、学号或班级">
+                    <button onclick="loadStudents()"
+                            class="btn ml-2 bg-blue-500 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all flex items-center justify-center h-auto"
+                            aria-label="搜索">
+                        <i class="fas fa-search mr-1" aria-hidden="true"></i>搜索
+                    </button>
+                </div>
+            </div>
+            <div class="overflow-x-auto rounded-lg border border-gray-200 shadow-sm" role="region"
+                 aria-labelledby="student-list-heading">
+                <h3 id="student-list-heading" class="sr-only">学生列表</h3>
+                <table class="min-w-full bg-white">
+                    <thead>
+                    <tr class="bg-gradient-to-r from-blue-50 to-blue-100 text-gray-600 uppercase text-sm leading-normal">
+                        <th class="py-3 px-6 text-left" scope="col">学生ID</th>
+                        <th class="py-3 px-6 text-left" scope="col">学号</th>
+                        <th class="py-3 px-6 text-left" scope="col">姓名</th>
+                        <th class="py-3 px-6 text-left" scope="col">邮箱</th>
+                        <th class="py-3 px-6 text-left" scope="col">学校</th>
+                        <th class="py-3 px-6 text-left" scope="col">班级</th>
+                        <th class="py-3 px-6 text-left" scope="col">已选课程</th>
+                        <th class="py-3 px-6 text-left" scope="col">操作</th>
+                    </tr>
+                    </thead>
+                    <tbody id="student-list" class="text-gray-600 text-sm">
+                    </tbody>
+                </table>
+                <div id="loading-students-message" class="text-center py-8 text-gray-500" style="display: none;"
+                     aria-live="polite">
+                    <div class="loader mb-3" role="status" aria-label="加载中"></div>
+                    <p>正在加载学生数据...</p>
+                </div>
+                <div id="no-students-data-message" class="text-center py-8 text-gray-500" style="display: none;"
+                     aria-live="polite">
+                    <i class="fas fa-user-slash text-4xl mb-2 text-gray-300" aria-hidden="true"></i>
+                    <p>没有找到学生数据。</p>
+                </div>
             </div>
         </section>
 
@@ -696,7 +774,7 @@
             <label for="new-lesson-semester" class="block text-gray-700 text-sm font-bold mb-2">所属学期:</label>
             <select id="new-lesson-semester"
                     class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                    aria-label="所属学期">
+                    aria-label="所选学期">
             </select>
         </div>
         <div class="mb-4">
@@ -740,6 +818,27 @@
     </div>
 </div>
 
+<div id="enroll-courses-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50 animate__animated animate__fadeIn">
+    <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md animate__animated animate__zoomIn">
+        <h3 id="enroll-courses-modal-title" class="text-xl font-bold mb-4 text-gray-800 border-b pb-3">为学生选课</h3>
+        <input type="hidden" id="enroll-courses-student-id">
+        <div id="modal-lesson-list" class="mb-4 max-h-60 overflow-y-auto">
+            <div class="loader mb-3" role="status" aria-label="加载中"></div>
+            <p class="text-center text-gray-500">正在加载课程列表...</p>
+        </div>
+        <div class="flex justify-end gap-3">
+            <button onclick="closeEnrollCoursesModal()"
+                    class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-300 transition-all">
+                取消
+            </button>
+            <button id="enroll-courses-modal-save-btn" onclick="saveStudentCourses()"
+                    class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all">
+                保存
+            </button>
+        </div>
+    </div>
+</div>
+
 
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
 <script>
@@ -748,12 +847,15 @@
     let allClassesMap = new Map();
     let allTeachersMap = new Map();
     let allSemestersMap = new Map();
+    let allLessonsMap = new Map();
     let currentTeacherIdForClass = null;
     let currentTeacherNameForClass = null;
     let currentLessonIdForTeacherAssignment = null;
+    let currentStudentIdForLessonEnrollment = null;
     let allTeachersData = [];
     let allSemestersData = [];
     let allLessonsData = [];
+    let allStudentsData = [];
     let expandedClassRows = new Set();
     let expandedLessonRows = new Set();
 
@@ -805,6 +907,12 @@
             loadLessons();
         } else if (page === 'student-management') {
             $("#student-management-section").show();
+            $.when(loadLessons()).done(function() {
+                loadStudents();
+            }).fail(function() {
+                showNotification("加载课程数据失败，无法显示学生选课信息。", "error");
+                loadStudents();
+            });
         } else if (page === 'question-management') {
             $("#question-management-section").show();
             loadQuestions();
@@ -831,11 +939,11 @@
                 $("#username").text(admin.name);
                 $("#dashboard-admin-name").text(admin.name);
                 $personalInfoContent.append(`
-                    <div class="info-item"><i class="fas fa-id-card" aria-hidden="true"></i><strong>管理员ID:</strong> ${admin.id || 'N/A'}</div>
-                    <div class="info-item"><i class="fas fa-user" aria-hidden="true"></i><strong>姓名:</strong> ${admin.name || 'N/A'}</div>
-                    <div class="info-item"><i class="fas fa-envelope" aria-hidden="true"></i><strong>邮箱:</strong> ${admin.email || 'N/A'}</div>
-                    <div class="info-item"><i class="fas fa-calendar-alt" aria-hidden="true"></i><strong>创建日期:</strong> ${admin.createdAt ? formatDisplayDateTime(admin.createdAt) : 'N/A'}</div>
-                    <div class="info-item"><i class="fas fa-clock" aria-hidden="true"></i><strong>上次登录:</strong> ${admin.lastLogin ? formatDisplayDateTime(admin.lastLogin) : 'N/A'}</div>
+                    <div class="info-item"><i class="fas fa-id-card" aria-hidden="true"></i><strong>管理员ID:</strong> ${admin.id || 'N\A'}</div>
+                    <div class="info-item"><i class="fas fa-user" aria-hidden="true"></i><strong>姓名:</strong> ${admin.name || 'N\A'}</div>
+                    <div class="info-item"><i class="fas fa-envelope" aria-hidden="true"></i><strong>邮箱:</strong> ${admin.email || 'N\A'}</div>
+                    <div class="info-item"><i class="fas fa-calendar-alt" aria-hidden="true"></i><strong>创建日期:</strong> ${admin.createdAt ? formatDisplayDateTime(admin.createdAt) : 'N\A'}</div>
+                    <div class="info-item"><i class="fas fa-clock" aria-hidden="true"></i><strong>上次登录:</strong> ${admin.lastLogin ? formatDisplayDateTime(admin.lastLogin) : 'N\A'}</div>
                 `);
             } else {
                 $personalInfoContent.html(`
@@ -868,7 +976,8 @@
         for (let i = 0; i < 5; i++) {
             $("#question-list").append(`
                 <tr>
-                    <td colspan="6" class="py-4"> <div class="shimmer w-full h-10 rounded-md"></div>
+                    <td colspan="6" class="py-4">
+                        <div class="shimmer w-full h-10 rounded-md"></div>
                     </td>
                 </tr>
             `);
@@ -1241,11 +1350,15 @@
             `);
         }
 
-        $.get("/Anotherview/api/adminInfo", {action: "getLessons"}, function (response) {
+        return $.get("/Anotherview/api/adminInfo", {action: "getLessons"}, function (response) {
             $("#lesson-list").empty();
             $("#loading-lessons-message").hide();
             if (response.success && response.lessons && response.lessons.length > 0) {
                 allLessonsData = response.lessons;
+                allLessonsMap.clear();
+                response.lessons.forEach(lesson => {
+                    allLessonsMap.set(lesson.id, lesson.title);
+                });
                 renderLessons(allLessonsData);
             } else {
                 $("#no-lessons-data-message").show();
@@ -1301,7 +1414,7 @@
                     <td class="py-3 px-6 text-left" id="lesson-${lesson.id}-teacher-name">${teacherName}</td>
                     <td class="py-3 px-6 text-center flex items-center justify-center">
                         <button onclick="event.stopPropagation(); openAssignTeacherModal(${lesson.id}, '${lesson.title}', ${lesson.teacherId})"
-                                class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all flex items-center justify-center">
+                                class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all">
                             <i class="fas fa-user-plus mr-1"></i>指定教师
                         </button>
                     </td>
@@ -1590,7 +1703,7 @@
         `);
 
         $.get("/Anotherview/api/adminInfo", {action: "getStudentsByLessonId", lessonId: lessonId}, function (response) {
-            console.log(`Students for lesson ${lessonId}:`, response); // Log response
+            console.log(`Students for lesson ${lessonId}:`, response);
             if (response.success && response.students && response.students.length > 0) {
                 renderStudentsList($studentListDiv, response.students);
             } else {
@@ -1645,7 +1758,7 @@
         `);
 
         $.get("/Anotherview/api/adminInfo", {action: "getTeachersByLessonId", lessonId: lessonId}, function (response) {
-            console.log(`Teachers for lesson ${lessonId}:`, response); // Log response
+            console.log(`Teachers for lesson ${lessonId}:`, response);
             if (response.success && response.teachers && response.teachers.length > 0) {
                 renderTeachersList($teacherListDiv, response.teachers);
             } else {
@@ -1724,7 +1837,7 @@
             if (response.success) {
                 showNotification("班级关联更新成功！", "success");
                 closeSelectClassModal();
-                loadTeachers(); // 重新加载教师列表以反映更改
+                loadTeachers();
             } else {
                 showNotification("班级关联更新失败: " + response.message, "error");
             }
@@ -1837,13 +1950,224 @@
         }
     }
 
+    function loadStudents() {
+        $("#loading-students-message").show();
+        $("#no-students-data-message").hide();
+        $("#student-list").empty();
+
+        for (let i = 0; i < 5; i++) {
+            $("#student-list").append(`
+                <tr>
+                    <td colspan="8" class="py-4">
+                        <div class="shimmer w-full h-10 rounded-md"></div>
+                    </td>
+                </tr>
+            `);
+        }
+
+        $.get("/Anotherview/api/adminInfo", {action: "getStudents"}, function (response) {
+            $("#student-list").empty();
+            $("#loading-students-message").hide();
+            if (response.success && response.students && response.students.length > 0) {
+                allStudentsData = response.students;
+                renderStudents(allStudentsData);
+            } else {
+                $("#no-students-data-message").show();
+            }
+        }).fail((xhr, status, error) => {
+            $("#student-list").empty();
+            $("#loading-students-message").hide();
+            $("#no-students-data-message").show().find('p').text('加载学生数据失败。');
+            showNotification('加载学生数据失败: ' + (xhr.responseJSON ? xhr.responseJSON.message : xhr.responseText), "error");
+            console.error("Error loading students:", error, xhr.responseText);
+        });
+    }
+
+    function renderStudents(students) {
+        const $studentListTbody = $("#student-list");
+        $studentListTbody.empty();
+
+        if (!students || students.length === 0) {
+            $("#no-students-data-message").show();
+            return;
+        } else {
+            $("#no-students-data-message").hide();
+        }
+
+        const nameFilter = $('#student-name-filter').val().toLowerCase();
+        const numberFilter = $('#student-number-filter').val().toLowerCase();
+        const classFilter = $('#student-class-filter').val().toLowerCase();
+        const searchTerm = $("#student-search-input").val().trim().toLowerCase();
+
+        let filteredStudents = students.filter(student => {
+            const matchesName = nameFilter === '' || (student.name && student.name.toLowerCase().includes(nameFilter));
+            const matchesNumber = numberFilter === '' || (student.studentNumber && student.studentNumber.toLowerCase().includes(numberFilter));
+            const matchesClass = classFilter === '' || (student.classof && student.classof.toLowerCase().includes(classFilter));
+            const matchesSearch = searchTerm === '' ||
+                (student.name && student.name.toLowerCase().includes(searchTerm)) ||
+                (student.studentNumber && student.studentNumber.toLowerCase().includes(searchTerm)) ||
+                (student.email && student.email.toLowerCase().includes(searchTerm)) ||
+                (student.school && student.school.toLowerCase().includes(searchTerm)) ||
+                (student.classof && student.classof.toLowerCase().includes(searchTerm));
+            return matchesName && matchesNumber && matchesClass && matchesSearch;
+        });
+
+        filteredStudents.forEach((student, index) => {
+            const row = $(`
+                <tr class="border-b border-gray-200 hover:bg-blue-50" data-student-id="${student.id}">
+                    <td class="py-3 px-6 text-left font-semibold">${student.id || 'N\A'}</td>
+                    <td class="py-3 px-6 text-left">${student.studentNumber || 'N\A'}</td>
+                    <td class="py-3 px-6 text-left">${student.name || 'N\A'}</td>
+                    <td class="py-3 px-6 text-left">${student.email || 'N\A'}</td>
+                    <td class="py-3 px-6 text-left">${student.school || 'N\A'}</td>
+                    <td class="py-3 px-6 text-left">${student.classof || 'N\A'}</td>
+                    <td class="py-3 px-6 text-left" id="student-${student.id}-lessons">加载中...</td>
+                    <td class="py-3 px-6 text-left">
+                        <button onclick="openEnrollCoursesModal(${student.id}, '${student.name}')"
+                                class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all">
+                            <i class="fas fa-book-reader mr-1"></i>选课
+                        </button>
+                    </td>
+                </tr>
+            `);
+            $studentListTbody.append(row);
+            setTimeout(() => row.addClass('fade-in'), index * 50);
+
+            loadAssociatedLessonsForStudent(student.id);
+        });
+    }
+
+    function loadAssociatedLessonsForStudent(studentId) {
+        const $lessonCell = $(`#student-${studentId}-lessons`);
+        $lessonCell.html('<span class="text-gray-500">加载中...</span>');
+        console.log(`Fetching associated lessons for student ID: ${studentId}`);
+
+        $.get("/Anotherview/api/adminInfo", {action: "getStudentLessons", studentId: studentId}, function (response) {
+            console.log(`Response for student ${studentId} associated lessons:`, response);
+            if (response.success && response.associatedLessonIds && response.associatedLessonIds.length > 0) {
+                const associatedLessonNames = response.associatedLessonIds.map(lessonId => {
+                    const lessonTitle = allLessonsMap.get(lessonId);
+                    if (!lessonTitle) {
+                        console.warn(`Lesson ID ${lessonId} not found in allLessonsMap for student ${studentId}.`);
+                        return `ID: ${lessonId} (未知课程)`;
+                    }
+                    return lessonTitle;
+                }).join(', ');
+                $lessonCell.attr('title', associatedLessonNames).text(associatedLessonNames);
+            } else {
+                $lessonCell.attr('title', '未选课').text('未选课');
+            }
+        }).fail((xhr, status, error) => {
+            $lessonCell.attr('title', '加载失败').text('加载失败');
+            console.error(`Failed to load associated lessons for student ID: ${studentId}`, error, xhr.responseText);
+            showNotification(`加载学生 ${studentId} 的已选课程失败。`, "error");
+        });
+    }
+
+
+    function openEnrollCoursesModal(studentId, studentName) {
+        currentStudentIdForLessonEnrollment = studentId;
+        $("#enroll-courses-modal-title").text(`为学生 "${studentName}" 选课`);
+        $("#enroll-courses-student-id").val(studentId);
+        const $lessonList = $("#modal-lesson-list");
+        $lessonList.empty();
+        $lessonList.html(`
+            <div class="loader mb-3" role="status" aria-label="加载中"></div>
+            <p class="text-center text-gray-500">正在加载课程列表...</p>
+        `);
+        $("#enroll-courses-modal-save-btn").prop('disabled', true);
+
+        if (allLessonsData.length === 0) {
+            console.warn("allLessonsData is empty when opening enroll courses modal. Attempting to reload lessons.");
+            $.when(loadLessons()).done(function() {
+                openEnrollCoursesModalLogic(studentId, studentName);
+            }).fail(function() {
+                $lessonList.html('<p class="text-center text-red-500"><i class="fas fa-exclamation-circle mr-1"></i>加载课程列表失败，请刷新页面重试。</p>');
+                $("#enroll-courses-modal-save-btn").prop('disabled', true);
+                showNotification("加载课程列表失败，无法进行选课操作。", "error");
+            });
+        } else {
+            openEnrollCoursesModalLogic(studentId, studentName);
+        }
+    }
+
+    function openEnrollCoursesModalLogic(studentId, studentName) {
+        const $lessonList = $("#modal-lesson-list");
+        $lessonList.empty();
+
+        $.get("/Anotherview/api/adminInfo", {action: "getStudentLessons", studentId: studentId})
+            .done(function(associatedLessonsResponse) {
+                const currentLessonIds = associatedLessonsResponse.success && associatedLessonsResponse.associatedLessonIds ? associatedLessonsResponse.associatedLessonIds : [];
+
+                if (allLessonsData.length === 0) {
+                    $lessonList.html('<p class="text-gray-600 text-center">没有可用课程。</p>');
+                    $("#enroll-courses-modal-save-btn").prop('disabled', true);
+                } else {
+                    allLessonsData.forEach(lesson => {
+                        const isChecked = currentLessonIds.includes(lesson.id) ? 'checked' : '';
+                        const semesterName = allSemestersMap.get(lesson.semesterId) || '未知学期';
+                        $lessonList.append(`
+                        <label class="inline-flex items-center mt-3 p-2 rounded-md hover:bg-blue-50 cursor-pointer transition-all w-full">
+                            <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600" name="selectedLessons" value="${lesson.id}" ${isChecked}>
+                            <span class="ml-2 text-gray-700">${lesson.title} (${semesterName})</span>
+                        </label>
+                    `);
+                    });
+                    $("#enroll-courses-modal-save-btn").prop('disabled', false);
+                }
+            }).fail(function(xhr, status, error) {
+            $lessonList.html('<p class="text-center text-red-500"><i class="fas fa-exclamation-circle mr-1"></i>加载课程列表失败。</p>');
+            $("#enroll-courses-modal-save-btn").prop('disabled', true);
+            console.error(`Failed to load associated lessons for student ${studentId} in modal:`, error, xhr.responseText);
+            showNotification(`加载学生 ${studentId} 的已选课程失败，请检查网络或刷新页面。`, "error");
+        });
+
+        $("#enroll-courses-modal").removeClass("hidden").addClass("flex");
+    }
+
+    function closeEnrollCoursesModal() {
+        $("#enroll-courses-modal").removeClass("flex").addClass("hidden");
+        currentStudentIdForLessonEnrollment = null;
+    }
+
+    function saveStudentCourses() {
+        const studentId = $("#enroll-courses-student-id").val();
+        const selectedLessonIds = $('input[name="selectedLessons"]:checked').map(function () {
+            return $(this).val();
+        }).get();
+
+        showNotification("正在保存选课信息...", "info");
+        $("#enroll-courses-modal-save-btn").prop('disabled', true);
+
+        $.post("/Anotherview/api/adminInfo", {
+            action: "updateStudentLessons",
+            studentId: studentId,
+            lessonIds: selectedLessonIds.join(',')
+        }, function (response) {
+            console.log("Save student courses response:", response);
+            if (response.success) {
+                showNotification("选课信息更新成功！", "success");
+                closeEnrollCoursesModal();
+                loadStudents();
+            } else {
+                showNotification("选课信息更新失败: " + response.message, "error");
+            }
+            $("#enroll-courses-modal-save-btn").prop('disabled', false);
+        }).fail((xhr) => {
+            showNotification('选课信息更新失败: ' + (xhr.responseJSON ? xhr.responseJSON.message : xhr.responseText), "error");
+            $("#enroll-courses-modal-save-btn").prop('disabled', false);
+            console.error("Error saving student courses:", xhr.responseText);
+        });
+    }
+
     $(document).ready(function () {
         animateEntranceSequence();
 
         $.when(
             loadAllClasses(),
             loadAllTeachers(),
-            loadSemesters()
+            loadSemesters(),
+            loadLessons()
         ).done(function () {
             $.get("/Anotherview/api/adminInfo", function (response) {
                 if (response.success && response.admin) {
@@ -1916,6 +2240,21 @@
                 renderLessons(allLessonsData);
             }, 300);
         });
+
+        $("#student-name-filter, #student-number-filter, #student-class-filter").on('input', function () {
+            clearTimeout(this.filterTimer);
+            this.filterTimer = setTimeout(() => {
+                renderStudents(allStudentsData);
+            }, 300);
+        });
+
+        $("#student-search-input").on('input', function () {
+            clearTimeout(this.searchTimer);
+            this.searchTimer = setTimeout(() => {
+                renderStudents(allStudentsData);
+            }, 300);
+        });
+
 
         $(".sidebar-button").removeClass("active").attr("aria-current", "false");
         $('.sidebar-button').each(function () {
