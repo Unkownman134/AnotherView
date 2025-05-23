@@ -643,12 +643,13 @@ public class PracticeDao {
     }
 
     /**
-     * 根据课程ID获取练习列表
+     * 根据课程ID和班级ID获取练习列表
      * @param lessonId 课程ID
+     * @param classId 班级ID
      * @return 练习列表
      */
-    public List<PracticeEntity> getPracticesByLessonId(int lessonId) {
-        logger.debug("尝试根据课程ID {} 获取练习列表。", lessonId);
+    public List<PracticeEntity> getPracticesByLessonIdAndClassId(int lessonId, int classId) {
+        logger.debug("尝试根据课程ID {} 和班级ID {} 获取练习列表。", lessonId, classId);
         List<PracticeEntity> practices = new ArrayList<>();
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -656,27 +657,28 @@ public class PracticeDao {
 
         try {
             conn = DBUtils.getConnection();
-            String sql = "SELECT * FROM practice WHERE lesson_id = ?";
-            logger.debug("执行 SQL: {} with lessonId = {}", sql, lessonId);
+            String sql = "SELECT p.* FROM practice p " +
+                    "JOIN practice_class pc ON p.practice_id = pc.practice_id " +
+                    "WHERE p.lesson_id = ? AND pc.class_id = ?";
+            logger.debug("执行 SQL: {} with lessonId = {} and classId = {}", sql, lessonId, classId);
             pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, lessonId);
+            pstmt.setInt(2, classId);
 
             rs = pstmt.executeQuery();
             while (rs.next()) {
                 PracticeEntity practice = buildPracticeEntity(rs);
-                //TODO
-                // updatePracticeStatus(practice.getId());
                 practices.add(practice);
-                logger.trace("找到练习: ID = {}, Title = {}, Lesson ID = {}", practice.getId(), practice.getTitle(), lessonId);
+                logger.trace("找到练习: ID = {}, Title = {}, Lesson ID = {}, Class ID = {}", practice.getId(), practice.getTitle(), lessonId, classId);
             }
-            logger.debug("成功找到 {} 个练习与课程 ID {} 关联。", practices.size(), lessonId);
+            logger.debug("成功找到 {} 个与课程 ID {} 和班级 ID {} 关联的练习。", practices.size(), lessonId, classId);
         } catch (SQLException e) {
-            logger.error("根据课程ID {} 获取练习列表时发生数据库异常。", lessonId, e);
+            logger.error("根据课程ID {} 和班级ID {} 获取练习列表时发生数据库异常。", lessonId, classId, e);
         } finally {
             DBUtils.close(conn, pstmt, rs);
             logger.debug("关闭数据库资源。");
         }
-        logger.debug("完成根据课程ID {} 获取练习列表操作。", lessonId);
+        logger.debug("完成根据课程ID {} 和班级ID {} 获取练习列表操作。", lessonId, classId);
         return practices;
     }
 }

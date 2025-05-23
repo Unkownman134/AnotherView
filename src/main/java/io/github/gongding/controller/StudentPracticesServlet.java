@@ -7,6 +7,7 @@ import io.github.gongding.dao.PracticeDao;
 import io.github.gongding.dao.SubmissionDao;
 import io.github.gongding.entity.PracticeEntity;
 import io.github.gongding.entity.StudentEntity;
+import io.github.gongding.service.StudentService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -29,6 +30,7 @@ public class StudentPracticesServlet extends HttpServlet {
     private static final Logger logger = LoggerFactory.getLogger(StudentPracticesServlet.class);
     private final PracticeDao practiceDao = new PracticeDao();
     private final SubmissionDao submissionDao = new SubmissionDao();
+    private final StudentService studentService = new StudentService();
     private final ObjectMapper mapper = new ObjectMapper();
 
     public StudentPracticesServlet() {
@@ -44,6 +46,8 @@ public class StudentPracticesServlet extends HttpServlet {
         String requestUrl = req.getRequestURL().toString();
         String remoteAddr = req.getRemoteAddr();
         logger.info("收到来自 IP 地址 {} 的 GET 请求: {} (获取学生练习列表)。", remoteAddr, requestUrl);
+
+        resp.setContentType("application/json;charset=utf-8");
 
         HttpSession session = req.getSession(false);
         if (session == null || session.getAttribute("student") == null) {
@@ -77,9 +81,18 @@ public class StudentPracticesServlet extends HttpServlet {
                 return;
             }
 
-            logger.debug("调用 PracticeDao 获取课程 ID {} 的练习列表。", lessonId);
-            List<PracticeEntity> practices = practiceDao.getPracticesByLessonId(lessonId);
-            logger.debug("成功获取课程 ID {} 的 {} 个练习。", lessonId, (practices != null ? practices.size() : 0));
+            // 获取学生所属的班级ID列表
+            List<Integer> studentClassIds = studentService.getAssociatedClassIdsForStudent(studentId);
+            if (studentClassIds == null || studentClassIds.isEmpty()) {
+                logger.warn("学生 ID {} 未关联任何班级，无法获取其练习列表。", studentId);
+                mapper.writeValue(resp.getWriter(), new ArrayList<>());
+                return;
+            }
+            int studentClassId = studentClassIds.get(0);
+
+            logger.debug("调用 PracticeDao 获取课程 ID {} 和班级 ID {} 的练习列表。", lessonId, studentClassId);
+            List<PracticeEntity> practices = practiceDao.getPracticesByLessonIdAndClassId(lessonId, studentClassId);
+            logger.debug("成功获取课程 ID {} 和班级 ID {} 的 {} 个练习。", lessonId, studentClassId, (practices != null ? practices.size() : 0));
 
             List<Map<String, Object>> practicesData = new ArrayList<>();
 
@@ -157,9 +170,8 @@ public class StudentPracticesServlet extends HttpServlet {
                 }
             }
 
-            resp.setContentType("application/json;charset=utf-8");
-            logger.debug("成功组织练习列表数据，返回给客户端。");
             mapper.writeValue(resp.getWriter(), practicesData);
+            logger.debug("成功组织练习列表数据，返回给客户端。");
 
         } catch (NumberFormatException e) {
             logger.warn("课程ID格式不正确: {}，拒绝访问 {}。", lessonIdStr, requestUrl, e);
