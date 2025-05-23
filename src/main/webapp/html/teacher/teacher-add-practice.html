@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>添加练习</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link rel="icon" href="/Anotherview/favicon.ico" type="image/x-icon" />
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            transition: background-color 0.3s ease;
+            background-color: #f4f7f6;
+            overflow-x: hidden;
+        }
+
+        .transition-all {
+            transition: all 0.3s ease-in-out;
+        }
+
+        .form-container {
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: background-color 0.4s ease, opacity 0.4s ease;
+            pointer-events: none;
+        }
+
+        .modal.is-visible {
+            display: flex;
+            background-color: rgba(0,0,0,0.4);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 700px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            transform: scale(0.8);
+            opacity: 0;
+            transition: transform 0.4s ease, opacity 0.4s ease;
+        }
+
+        .modal.is-visible .modal-content {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        .close-button {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            cursor: pointer;
+            transition: color 0.3s ease, transform 0.2s ease;
+            z-index: 10;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: #777;
+            transform: rotate(90deg);
+            outline: none;
+        }
+
+        .btn {
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .btn::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%, -50%);
+            transform-origin: 50% 50%;
+            z-index: -1;
+        }
+
+        .btn:focus:not(:active)::after {
+            animation: ripple 1s ease-out;
+        }
+
+        @keyframes ripple {
+            0% {
+                opacity: 0.5;
+                transform: scale(0, 0);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(20, 20);
+            }
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a1a1a1;
+        }
+
+        button {
+            writing-mode: horizontal-tb;
+            text-orientation: mixed;
+        }
+
+        .checkbox-group {
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 4px;
+            max-height: 150px;
+            overflow-y: auto;
+            background-color: #fefefe;
+        }
+        .checkbox-item {
+            margin-bottom: 5px;
+        }
+        .checkbox-item label {
+            font-weight: normal;
+            margin-bottom: 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+        .checkbox-item input[type="checkbox"] {
+            margin-right: 8px;
+        }
+
+        #questionList .question-item {
+            margin: 5px 0;
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+        }
+        #questionList .question-item label {
+            margin-bottom: 0;
+            flex-grow: 1;
+            cursor: pointer;
+        }
+        #questionList .question-item input[type="checkbox"] {
+            margin-right: 10px;
+        }
+
+        #selectedQuestions tr {
+            cursor: grab;
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        #selectedQuestions tr.fade-in {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        #selectedQuestions tr:active {
+            cursor: grabbing;
+            transform: scale(1.02);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            z-index: 2;
+        }
+
+        #selectedQuestions tr.sortable-chosen {
+            background-color: #e0e7ff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        #selectedQuestions tr.sortable-ghost {
+            opacity: 0.4;
+        }
+
+        .drag-handle {
+            cursor: grab;
+            margin-right: 10px;
+            color: #9ca3af;
+            transition: color 0.2s ease;
+        }
+
+        #selectedQuestions tr:hover .drag-handle {
+            color: #4f46e5;
+        }
+
+    </style>
+</head>
+<body class="bg-gray-100 p-6 font-sans">
+
+<div class="form-container bg-white p-6 rounded-lg shadow-md max-w-4xl mx-auto">
+    <h2 class="text-2xl font-bold mb-4 text-gray-800 border-b pb-4 flex items-center">
+        <i class="fas fa-plus-circle text-green-500 mr-3" aria-hidden="true"></i>
+        添加练习
+    </h2>
+
+    <form id="addPracticeForm">
+        <div class="mb-4">
+            <label for="practiceTitle" class="block text-gray-700 text-sm font-bold mb-2 flex items-center">
+                <i class="fas fa-heading text-blue-500 mr-2" aria-hidden="true"></i>
+                练习名称:
+            </label>
+            <input type="text" id="practiceTitle" required class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+        </div>
+
+        <div class="mb-4">
+            <label for="lessonSelect" class="block text-gray-700 text-sm font-bold mb-2 flex items-center">
+                <i class="fas fa-book-open text-indigo-500 mr-2" aria-hidden="true"></i>
+                所属课程:
+            </label>
+            <select id="lessonSelect" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"></select>
+        </div>
+
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2 flex items-center">
+                <i class="fas fa-users text-pink-500 mr-2" aria-hidden="true"></i>
+                所属班级:
+            </label>
+            <div id="classCheckboxGroup" class="checkbox-group border border-gray-200 rounded-md p-3 max-h-40 overflow-y-auto bg-gray-50">
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <label for="startTime" class="block text-gray-700 text-sm font-bold mb-2 flex items-center">
+                <i class="fas fa-play-circle text-blue-500 mr-2" aria-hidden="true"></i>
+                开始时间:
+            </label>
+            <input type="datetime-local" id="startTime" required class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+        </div>
+
+        <div class="mb-4">
+            <label for="endTime" class="block text-gray-700 text-sm font-bold mb-2 flex items-center">
+                <i class="fas fa-stop-circle text-red-500 mr-2" aria-hidden="true"></i>
+                结束时间:
+            </label>
+            <input type="datetime-local" id="endTime" required class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+        </div>
+
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2 flex items-center">
+                <i class="fas fa-question-circle text-teal-500 mr-2" aria-hidden="true"></i>
+                题目列表:
+            </label>
+            <p class="text-gray-600 text-sm mb-2 flex items-center"><i class="fas fa-info-circle mr-1 text-blue-500"></i> 提示：在下方表格中按住题目行可以拖动排序。</p>
+            <button type="button" onclick="openQuestionModal()" class="btn bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all mb-2 flex items-center">
+                <i class="fas fa-tasks mr-1" aria-hidden="true"></i> 题库选题
+            </button>
+            <div class="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+                <table id="questionTable" class="min-w-full bg-white">
+                    <thead>
+                    <tr class="bg-gradient-to-r from-blue-50 to-blue-100 text-gray-600 uppercase text-sm leading-normal">
+                        <th class="py-3 px-6 text-left">序号</th>
+                        <th class="py-3 px-6 text-left">题目简介</th>
+                        <th class="py-3 px-6 text-left">题型</th>
+                        <th class="py-3 px-6 text-left">分值</th>
+                        <th class="py-3 px-6 text-center">操作</th>
+                    </tr>
+                    </thead>
+                    <tbody id="selectedQuestions" class="text-gray-600 text-sm">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-4 mt-6">
+            <button type="button" onclick="submitPractice()" class="btn bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-300 transition-all flex items-center">
+                <i class="fas fa-check-circle mr-1" aria-hidden="true"></i> 确定
+            </button>
+            <button type="button" onclick="location.href='teacher.html'" class="btn bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-300 transition-all flex items-center">
+                <i class="fas fa-times-circle mr-1" aria-hidden="true"></i> 返回
+            </button>
+        </div>
+    </form>
+</div>
+
+<div id="questionModal" class="modal">
+    <div class="modal-content animate__animated animate__fadeIn">
+        <span class="close-button" data-modal-id="questionModal" aria-label="关闭模态框">&times;</span>
+        <h3 class="text-xl font-bold mb-4 text-gray-800 flex items-center">
+            <i class="fas fa-question-circle text-teal-500 mr-2" aria-hidden="true"></i>
+            题库选题（课程：<span id="currentLesson" class="text-blue-600"></span>）
+        </h3>
+        <div id="questionList" class="max-h-60 overflow-y-auto border border-gray-200 rounded-md p-3">
+        </div>
+        <div class="flex justify-end gap-4 mt-4">
+            <button type="button" onclick="confirmSelection()" class="btn bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-300 transition-all flex items-center">
+                <i class="fas fa-check mr-1" aria-hidden="true"></i> 确认选择
+            </button>
+            <button type="button" onclick="closeModal()" class="btn bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-300 transition-all flex items-center">
+                <i class="fas fa-times-circle mr-1" aria-hidden="true"></i> 关闭
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script>
+    let selectedQuestions = [];
+    let currentLessonId = null;
+    let sortableInstance = null;
+
+    $(function () {
+        loadLessons();
+        loadClasses();
+
+        const selectedQuestionsBody = document.getElementById('selectedQuestions');
+        sortableInstance = Sortable.create(selectedQuestionsBody, {
+            animation: 200,
+            handle: 'tr',
+            ghostClass: 'sortable-ghost',
+            chosenClass: 'sortable-chosen',
+            onEnd: function (evt) {
+                const oldIndex = evt.oldIndex;
+                const newIndex = evt.newIndex;
+
+                const [movedItem] = selectedQuestions.splice(oldIndex, 1);
+                selectedQuestions.splice(newIndex, 0, movedItem);
+
+                renderSelectedQuestions();
+            }
+        });
+
+
+        document.querySelectorAll('.close-button').forEach(button => {
+            button.addEventListener('click', () => {
+                const modalId = button.dataset.modalId;
+                const modal = document.getElementById(modalId);
+                if (modal) {
+                    hideModal(modal);
+                }
+            });
+        });
+
+        window.addEventListener('click', (event) => {
+            if (event.target.classList.contains('modal')) {
+                hideModal(event.target);
+            }
+        });
+    });
+
+    function loadLessons() {
+        $.get("/Anotherview/api/teacher/lessons", lessons => {
+            $("#lessonSelect").empty();
+            lessons.forEach(lesson => {
+                $("#lessonSelect").append(`<option value="${lesson.id}">${lesson.title}</option>`);
+            });
+            currentLessonId = $("#lessonSelect").val();
+        });
+    }
+
+    function loadClasses() {
+        $.get("/Anotherview/api/teacher/classes", classes => {
+            const container = $("#classCheckboxGroup").empty();
+            if (classes.length === 0) {
+                container.append('<p class="text-gray-500 py-2 text-center">没有找到教授的班级。</p>');
+                return;
+            }
+            classes.forEach(cls => {
+                container.append(`
+                    <div class="checkbox-item flex items-center py-1">
+                        <label class="flex items-center w-full cursor-pointer text-gray-700 hover:text-blue-600 transition-all">
+                            <input type="checkbox" value="${cls.id}" class="mr-2 form-checkbox text-blue-600 rounded">
+                            <span class="flex-grow">${cls.name}</span>
+                        </label>
+                    </div>
+                `);
+            });
+        });
+    }
+
+    function openQuestionModal() {
+        currentLessonId = $("#lessonSelect").val();
+        if (!currentLessonId) {
+            alert("请先选择课程！");
+            return;
+        }
+        $("#currentLesson").text($("#lessonSelect option:selected").text());
+        showModal($("#questionModal")[0]);
+
+        $.get(`/Anotherview/api/teacher/questions?lessonId=${currentLessonId}`, questions => {
+            const container = $("#questionList").empty();
+            if (questions.length === 0) {
+                container.append('<p class="text-center text-gray-500 py-4">该课程下没有题目。</p>');
+                return;
+            }
+            questions.forEach(q => {
+                const isSelected = selectedQuestions.some(sq => sq.id === q.id);
+                container.append(`
+                    <div class="question-item flex items-center py-2 border-b border-gray-100 last:border-b-0">
+                        <label class="flex items-center w-full cursor-pointer text-gray-700 hover:text-blue-600 transition-all">
+                            <input type="checkbox" value='${JSON.stringify(q)}' ${isSelected ? 'checked' : ''} class="mr-3 form-checkbox text-blue-600 rounded">
+                            <span class="flex-grow">${q.content ? q.content.substring(0, 80) + (q.content.length > 80 ? '...' : '') : '无内容'}（题型：${q.type || '未知'}，分值：${q.score || 0}）</span>
+                        </label>
+                    </div>
+                `);
+            });
+        });
+    }
+
+    function confirmSelection() {
+        const newSelected = [];
+        $("#questionList input:checked").each(function () {
+            newSelected.push(JSON.parse($(this).val()));
+        });
+
+        const remainingSelected = selectedQuestions.filter(sq => {
+            const sqValue = JSON.stringify(sq);
+            return $(`#questionList input[type='checkbox'][value='${sqValue.replace(/'/g, "&#39;")}']`).prop('checked');
+        });
+
+        const combinedSelected = [...remainingSelected, ...newSelected];
+        selectedQuestions = Array.from(new Set(combinedSelected.map(q => JSON.stringify(q)))).map(s => JSON.parse(s));
+
+
+        renderSelectedQuestions();
+        hideModal($("#questionModal")[0]);
+    }
+
+    function renderSelectedQuestions() {
+        const tbody = $("#selectedQuestions").empty();
+        if (selectedQuestions.length === 0) {
+            tbody.append('<tr><td colspan="5" class="text-center text-gray-500 py-4">无题目</td></tr>');
+            return;
+        }
+        selectedQuestions.forEach((q, index) => {
+            const row = $(`
+                <tr class="border-b border-gray-200 hover:bg-blue-50 last:border-b-0">
+                    <td class="py-2 px-6 text-left flex items-center">
+                         <i class="fas fa-grip-vertical drag-handle" aria-hidden="true"></i>
+                         ${index + 1}
+                    </td>
+                    <td class="py-2 px-6 text-left">${q.content ? q.content.substring(0, 50) + (q.content.length > 50 ? '...' : '') : '无内容'}</td>
+                    <td class="py-2 px-6 text-left">${q.type || '未知'}</td>
+                    <td class="py-2 px-6 text-left">${q.score || 0}</td>
+                    <td class="py-2 px-6 text-center">
+                        <button onclick="deleteQuestion(${index})" class="btn bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded-lg text-xs transition-all">删除</button>
+                    </td>
+                </tr>
+            `);
+            tbody.append(row);
+            setTimeout(() => {
+                row.addClass('fade-in');
+            }, 50 * index);
+        });
+    }
+
+    function deleteQuestion(index) {
+        selectedQuestions.splice(index, 1);
+        renderSelectedQuestions();
+    }
+
+    function closeModal() {
+        hideModal($("#questionModal")[0]);
+    }
+
+    function showModal(modalElement) {
+        modalElement.classList.add('is-visible');
+        const modalContent = modalElement.querySelector('.modal-content');
+        modalContent.style.transform = 'scale(0.8)';
+        modalContent.style.opacity = '0';
+        setTimeout(() => {
+            modalContent.classList.add('animate__animated', 'animate__fadeIn');
+        }, 10);
+    }
+
+    function hideModal(modalElement) {
+        const modalContent = modalElement.querySelector('.modal-content');
+        modalContent.classList.remove('animate__fadeIn');
+        modalContent.classList.add('animate__fadeOut');
+
+        modalContent.addEventListener('animationend', function handleAnimationEnd() {
+            modalElement.classList.remove('is-visible');
+            modalContent.classList.remove('animate__fadeOut');
+            modalContent.removeEventListener('animationend', handleAnimationEnd);
+            modalContent.style.transform = '';
+            modalContent.style.opacity = '';
+        }, { once: true });
+    }
+
+
+    function submitPractice() {
+        const classIds = [];
+        $("#classCheckboxGroup input:checked").each(function () {
+            const id = parseInt($(this).val(), 10);
+            if (!isNaN(id)) classIds.push(id);
+        });
+
+        const practiceData = {
+            title: $("#practiceTitle").val(),
+            lessonId: parseInt(currentLessonId),
+            classIds: classIds,
+            questionIds: selectedQuestions.map(q => q.id),
+            startTime: $("#startTime").val(),
+            endTime: $("#endTime").val()
+        };
+
+        if (!practiceData.title) {
+            alert("请填写练习名称！");
+            return;
+        }
+        if (!practiceData.lessonId) {
+            alert("请选择所属课程！");
+            return;
+        }
+        if (practiceData.classIds.length === 0) {
+            alert("请至少选择一个班级！");
+            return;
+        }
+
+        if (practiceData.questionIds.length === 0) {
+            alert("请至少选择一个题目！");
+            return;
+        }
+
+        if (!practiceData.startTime || !practiceData.endTime) {
+            alert("请选择开始时间和结束时间！");
+            return;
+        }
+
+        const startDate = new Date(practiceData.startTime);
+        const endDate = new Date(practiceData.endTime);
+
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+            alert("无效的日期或时间格式！");
+            return;
+        }
+
+        if (startDate >= endDate) {
+            alert("结束时间必须晚于开始时间！");
+            return;
+        }
+
+
+        $.ajax({
+            url: "/Anotherview/api/teacher/practice",
+            method: "POST",
+            contentType: "application/json",
+            data: JSON.stringify(practiceData),
+            success: () => {
+                alert("练习创建成功！");
+                location.href = "teacher.html";
+            },
+            error: (xhr) => {
+                console.error("提交失败：", xhr.responseText);
+                alert("提交失败：" + (xhr.responseJSON ? xhr.responseJSON.message : xhr.responseText));
+            }
+        });
+    }
+</script>
+</body>
+</html>

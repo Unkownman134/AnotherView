@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>答题界面</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link rel="icon" href="/Anotherview/favicon.ico" type="image/x-icon" />
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #f3f4f6;
+            color: #333;
+            line-height: 1.6;
+            padding-bottom: 80px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 900px;
+        }
+
+        #header {
+            background: linear-gradient(to right, #6366f1, #818cf8);
+            padding: 1.5rem 2rem;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            border-radius: 12px;
+            color: white;
+            animation: slideInDown 0.8s ease-out;
+        }
+
+        @keyframes slideInDown {
+            0% { transform: translateY(-100px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+
+        #header h2 {
+            flex-grow: 1;
+            margin: 0;
+            font-size: 2rem;
+            display: flex;
+            align-items: center;
+            font-weight: 700;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+        }
+
+        #header h2 i {
+            margin-right: 1rem;
+            color: #c7d2fe;
+        }
+
+        #header span {
+            font-size: 1rem;
+            color: #e0e7ff;
+            font-weight: 600;
+        }
+
+        .btn-view {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            backdrop-filter: blur(5px);
+            z-index: 1;
+        }
+
+        .btn-view:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transform: translateY(-2px);
+        }
+        .btn-view::after, .submit-btn::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%, -50%);
+            transform-origin: 50% 50%;
+            z-index: -1;
+        }
+        .btn-view:focus:not(:active)::after, .submit-btn:focus:not(:active)::after {
+            animation: ripple 1s ease-out;
+        }
+        @keyframes ripple {
+            0% { opacity: 0.5; transform: scale(0,0); }
+            100% { opacity: 0; transform: scale(20,20); }
+        }
+
+
+        .question-item {
+            background-color: #ffffff;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid #e0e7ff;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .question-item.fade-in {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .question-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .question-item h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eef2ff;
+            color: #333;
+        }
+
+        .options-list {
+            list-style: none;
+            padding: 0;
+            margin: 1.5rem 0;
+        }
+
+        .options-list li {
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: flex-start;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        .options-list li:hover {
+            color: #6366f1;
+        }
+
+        .options-list input[type="radio"],
+        .options-list input[type="checkbox"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            border: 2px solid #cbd5e0;
+            border-radius: 4px;
+            outline: none;
+            transition: all 0.2s ease;
+            position: relative;
+            cursor: pointer;
+            flex-shrink: 0;
+            margin-top: 4px;
+            margin-right: 12px;
+        }
+        .options-list input[type="radio"] {
+            border-radius: 50%;
+        }
+
+        .options-list input[type="radio"]:checked,
+        .options-list input[type="checkbox"]:checked {
+            border-color: #6366f1;
+            background-color: #6366f1;
+            animation: check-animation 0.3s ease-in-out;
+        }
+
+        @keyframes check-animation {
+            0% { transform: scale(0.8); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .options-list input[type="radio"]:checked::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #fff;
+            animation: pulse 0.3s ease-in-out;
+        }
+        .options-list input[type="checkbox"]:checked::before {
+            content: '\f00c';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-size: 14px;
+        }
+
+        @keyframes pulse {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
+
+        .options-list label {
+            font-weight: normal;
+            cursor: pointer;
+            flex-grow: 1;
+            line-height: 1.5;
+            font-size: 1.05rem;
+        }
+        .option-label {
+            font-weight: 600;
+            margin-right: 8px;
+            color: #555;
+        }
+
+
+        .text-answer-input textarea {
+            width: 100%;
+            padding: 1rem;
+            border: 1px solid #cbd5e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .text-answer-input textarea:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+        }
+
+        .submit-btn {
+            display: block;
+            width: auto;
+            margin: 2rem auto 0;
+            padding: 1rem 2.5rem;
+            background-color: #10b981;
+            color: white;
+            font-weight: 700;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.25rem;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+            animation: bounceIn 0.8s ease-out 0.5s both;
+        }
+
+        @keyframes bounceIn {
+            0%, 20%, 40%, 60%, 80%, 100% {
+                -webkit-transition-timing-function: cubic-bezier(0.215, .61, .355, 1);
+                transition-timing-function: cubic-bezier(0.215, .61, .355, 1)
+            }
+            0% {
+                opacity: 0;
+                -webkit-transform: scale3d(.3, .3, .3);
+                transform: scale3d(.3, .3, .3)
+            }
+            20% {
+                -webkit-transform: scale3d(1.1, 1.1, 1.1);
+                transform: scale3d(1.1, 1.1, 1.1)
+            }
+            40% {
+                -webkit-transform: scale3d(.9, .9, .9);
+                transform: scale3d(.9, .9, .9)
+            }
+            60% {
+                opacity: 1;
+                -webkit-transform: scale3d(1.03, 1.03, 1.03);
+                transform: scale3d(1.03, 1.03, 1.03)
+            }
+            80% {
+                -webkit-transform: scale3d(.97, .97, .97);
+                transform: scale3d(.97, .97, .97)
+            }
+            100% {
+                opacity: 1;
+                -webkit-transform: scale3d(1, 1, 1);
+                transform: scale3d(1, 1, 1)
+            }
+        }
+
+        .submit-btn:hover {
+            background-color: #059669;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 14px rgba(16, 185, 129, 0.4);
+        }
+        .submit-btn:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+            animation: none;
+        }
+
+        .readonly-mode input,
+        .readonly-mode textarea {
+            pointer-events: none;
+            opacity: 0.8;
+            background-color: #eef2ff;
+        }
+        .readonly-mode .submit-btn {
+            display: none;
+        }
+        .readonly-mode .options-list li {
+            cursor: default;
+        }
+        .readonly-mode .options-list li:hover {
+            color: inherit;
+        }
+
+        .correct-answer, .previous-answer, .feedback, .grade {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-left: 5px solid;
+            border-radius: 8px;
+            font-size: 1rem;
+            line-height: 1.5;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        .correct-answer.fade-in, .previous-answer.fade-in, .feedback.fade-in, .grade.fade-in {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .correct-answer {
+            border-color: #10b981;
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .previous-answer {
+            border-color: #6366f1;
+            background-color: #e0e7ff;
+            color: #3730a3;
+        }
+        .previous-answer.is-correct {
+            border-color: #10b981;
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .previous-answer.is-incorrect {
+            border-color: #f59e0b;
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        .feedback {
+            border-color: #a78bfa;
+            background-color: #ede9fe;
+            color: #6d28d9;
+        }
+        .grade {
+            border-color: #f97316;
+            background-color: #ffedd5;
+            color: #9a3412;
+        }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a1a1a1; }
+
+        .loader {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid #6366f1;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .shimmer {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        #loading-message {
+            transition: opacity 0.5s ease;
+        }
+    </style>
+</head>
+<body class="p-6">
+<div class="container mx-auto">
+    <div id="header">
+        <button onclick="goBack()" class="btn-view"><i class="fas fa-arrow-left mr-2"></i> 返回</button>
+        <h2 id="practiceTitle"><i class="fas fa-clipboard-list"></i> 练习详情</h2>
+        <span>截止时间: <span id="endTime"></span></span>
+    </div>
+
+    <form id="answerForm">
+        <div id="questionsContainer">
+            <div id="loading-message" class="text-center py-8 text-gray-500">
+                <div class="loader mb-3" role="status" aria-label="加载中"></div>
+                <p>正在加载题目...</p>
+            </div>
+        </div>
+        <button type="button" class="submit-btn" onclick="submitAnswers()"><i class="fas fa-check-circle mr-2"></i> 提交练习</button>
+    </form>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const practiceId = urlParams.get('practice_id');
+    const lessonId = urlParams.get('lesson_id');
+    const mode = urlParams.get('mode');
+
+    let isReadOnly = mode === 'view';
+    let globalQuestions = [];
+    let hasPreviousSubmission = false;
+
+    $(function () {
+        $.get(`/Anotherview/api/student/practiceDetails?practice_id=${practiceId}${mode ? '&mode=' + mode : ''}`, function (practice) {
+            $('#practiceTitle').append(`: ${escapeHtml(practice.title || '无标题')}`);
+            const endTimeText = practice.endAt ? new Date(practice.endAt).toLocaleString() : '未设定';
+            $('#endTime').text(endTimeText);
+
+            if (practice.endAt && new Date(practice.endAt) < new Date()) {
+                isReadOnly = true;
+                $('.submit-btn').prop('disabled', true).html('<i class="fas fa-lock mr-2"></i> 练习已截止');
+            }
+
+            if (isReadOnly) {
+                $('#answerForm').addClass('readonly-mode');
+            }
+            loadQuestions(practiceId);
+
+        }).fail(function(xhr, status, error) {
+            console.error("Error loading practice details:", error);
+            $('#practiceTitle').append(': 练习信息加载失败');
+            $('#endTime').text('-');
+            $('#questionsContainer').html('<p class="text-red-500 text-center py-4"><i class="fas fa-exclamation-circle mr-2"></i>无法加载练习详情和题目。</p>');
+            $("#loading-message").hide();
+        });
+    });
+
+    function loadQuestions(pId) {
+        $("#loading-message").show();
+        $.get(`/Anotherview/api/student/questions?practice_id=${pId}${mode ? '&mode=' + mode : ''}`, function (questions) {
+            globalQuestions = questions;
+            renderQuestions(questions);
+            if (questions.length > 0) {
+                loadPreviousAnswers(pId);
+            } else {
+                $("#loading-message").hide();
+                if (!isReadOnly) $('.submit-btn').hide();
+            }
+        }).fail(function(xhr, status, error) {
+            console.error("Error loading questions:", error);
+            $('#questionsContainer').html('<p class="text-red-500 text-center py-4"><i class="fas fa-exclamation-circle mr-2"></i>加载题目失败。</p>');
+            $("#loading-message").hide();
+        });
+    }
+
+    function renderQuestions(questions) {
+        const container = $('#questionsContainer');
+        container.empty();
+
+        if (questions.length === 0) {
+            container.append('<p class="text-gray-500 text-center py-4"><i class="fas fa-box-open mr-2"></i>该练习没有题目。</p>');
+            if (!isReadOnly) $('.submit-btn').hide();
+            return;
+        }
+
+        questions.forEach((q, index) => {
+            let optionsHtml = '';
+            let inputHtml = '';
+            const questionIndex = index + 1;
+
+            if (q.type === 'single_choice' || q.type === 'multiple_choice') {
+                optionsHtml = '<ul class="options-list">';
+                if (Array.isArray(q.options)) {
+                    q.options.forEach((option, optIndex) => {
+                        const inputType = q.type === 'single_choice' ? 'radio' : 'checkbox';
+                        const inputName = `q${q.id}`;
+                        const optionId = `${inputName}-opt${optIndex}`;
+                        const optionLabel = String.fromCharCode(65 + optIndex);
+
+                        optionsHtml += `
+                            <li>
+                                <input type="${inputType}" id="${optionId}" name="${inputName}" value="${escapeHtml(option)}">
+                                <label for="${optionId}">
+                                    <span class="option-label">${optionLabel}.</span>
+                                    ${escapeHtml(option)}
+                                </label>
+                            </li>`;
+                    });
+                }
+                optionsHtml += '</ul>';
+            } else if (q.type === 'fill_blank' || q.type === 'essay') {
+                inputHtml = `
+                     <div class="text-answer-input">
+                         <textarea name="q${q.id}" rows="${q.type === 'essay' ? '8' : '3'}" cols="50" placeholder="请在此处填写答案..."></textarea>
+                     </div>
+                 `;
+            }
+            const correctHtml = `<div class="correct-answer" style="display: none;"><i class="fas fa-check-circle mr-2"></i><strong>正确答案：</strong> <span class="answer-text"></span></div>`;
+            const questionHtml = `
+                <div class="question-item" data-qid="${q.id}">
+                    <h3>${questionIndex}. ${escapeHtml(q.content || '题目内容缺失')} (${q.type ? q.type.replace('_', ' ') : '未知类型'}, ${q.score || 0}分)</h3>
+                    ${optionsHtml}
+                    ${inputHtml}
+                    <div class="previous-answer" style="display: none;">
+                        <i class="fas fa-user-edit mr-2"></i><strong>你的答案：</strong> <span class="answer-text"></span>
+                    </div>
+                    <div class="grade" style="display: none;">
+                        <i class="fas fa-star mr-2"></i><strong>得分：</strong> <span class="grade-text"></span>
+                    </div>
+                    <div class="feedback" style="display: none;">
+                        <i class="fas fa-comment-dots mr-2"></i><strong>教师评语：</strong> <span class="feedback-text"></span>
+                    </div>
+                    ${correctHtml}
+                </div>`;
+            container.append(questionHtml);
+
+            setTimeout(() => {
+                container.find(`.question-item[data-qid="${q.id}"]`).addClass('fade-in');
+            }, 100 * index);
+        });
+        $("#loading-message").hide();
+    }
+
+    function loadPreviousAnswers(pId) {
+        $.get(`/Anotherview/api/student/previous-answers?practice_id=${pId}${mode ? '&mode=' + mode : ''}`, function (submission) {
+            if (submission && submission.answers && Array.isArray(submission.answers) && submission.answers.length > 0) {
+                hasPreviousSubmission = true;
+                submission.answers.forEach(subAnswer => {
+                    const questionItem = $(`div.question-item[data-qid="${subAnswer.questionId}"]`);
+                    if (questionItem.length > 0) {
+                        const question = globalQuestions.find(q => q.id === subAnswer.questionId);
+                        const studentAnswer = subAnswer.studentAnswer;
+
+                        if (question && studentAnswer !== null && studentAnswer !== undefined) {
+                            if (question.type === 'single_choice' || question.type === 'multiple_choice') {
+                                const studentValues = studentAnswer.split(',').map(s => s.trim()).filter(s => s !== '');
+                                studentValues.forEach(val => {
+                                    questionItem.find(`input[value="${escapeHtml(val)}"]`).prop('checked', true);
+                                });
+                            } else if (question.type === 'fill_blank' || question.type === 'essay') {
+                                questionItem.find(`textarea[name="q${question.id}"]`).val(studentAnswer);
+                            }
+
+                            if (isReadOnly) {
+                                const previousAnswerDiv = questionItem.find('.previous-answer');
+                                let displayedAnswer = escapeHtml(studentAnswer || '未作答');
+                                if ((question.type === 'single_choice' || question.type === 'multiple_choice') && Array.isArray(question.options)) {
+                                    const studentValues = studentAnswer.split(',').map(s => s.trim().toLowerCase()).filter(s => s !== '');
+                                    const studentLabels = studentValues.map(val => {
+                                        const optIndex = question.options.findIndex(opt => opt && opt.trim().toLowerCase() === val);
+                                        return optIndex !== -1 ? String.fromCharCode(65 + optIndex) : escapeHtml(val);
+                                    }).join(', ');
+                                    displayedAnswer = studentLabels || '未作答';
+                                } else if (question.type === 'fill_blank' || question.type === 'essay') {
+                                    displayedAnswer = escapeHtml(studentAnswer.replace(/\n/g, '<br>') || '未作答');
+                                }
+                                previousAnswerDiv.find('.answer-text').html(displayedAnswer);
+                                previousAnswerDiv.show();
+
+                                if (subAnswer.grade !== null && subAnswer.grade !== undefined) {
+                                    const gradeDiv = questionItem.find('.grade');
+                                    gradeDiv.find('.grade-text').text(parseFloat(subAnswer.grade).toFixed(2));
+                                    gradeDiv.show();
+                                }
+                                if (subAnswer.feedback && subAnswer.feedback.trim() !== '') {
+                                    const feedbackDiv = questionItem.find('.feedback');
+                                    feedbackDiv.find('.feedback-text').text(escapeHtml(subAnswer.feedback));
+                                    feedbackDiv.show();
+                                }
+                                if (subAnswer.isCorrect !== null && subAnswer.isCorrect !== undefined) {
+                                    previousAnswerDiv.removeClass('is-correct is-incorrect');
+                                    if (subAnswer.isCorrect) {
+                                        previousAnswerDiv.addClass('is-correct');
+                                    } else {
+                                        previousAnswerDiv.addClass('is-incorrect');
+                                    }
+                                }
+
+                                if (question.correctAnswer && question.correctAnswer.trim() !== '') {
+                                    const correctAnswerDiv = questionItem.find('.correct-answer');
+                                    let formattedCorrectAnswer = escapeHtml(question.correctAnswer);
+                                    if ((question.type === 'single_choice' || question.type === 'multiple_choice') && Array.isArray(question.options)) {
+                                        const correctValues = question.correctAnswer.split(',').map(s => s.trim().toLowerCase()).filter(s => s !== '');
+                                        const correctLabels = correctValues.map(val => {
+                                            const optIndex = question.options.findIndex(opt => opt && opt.trim().toLowerCase() === val);
+                                            return optIndex !== -1 ? String.fromCharCode(65 + optIndex) : escapeHtml(val);
+                                        }).join(', ');
+                                        formattedCorrectAnswer = correctLabels || formattedCorrectAnswer;
+                                    } else if (question.type === 'fill_blank' || question.type === 'essay') {
+                                        formattedCorrectAnswer = escapeHtml(question.correctAnswer.replace(/\n/g, '<br>') || '无');
+                                    }
+                                    correctAnswerDiv.find('.answer-text').html(formattedCorrectAnswer);
+                                    correctAnswerDiv.show();
+                                }
+
+
+                                // Apply fade-in animation to all relevant divs
+                                setTimeout(() => {
+                                    previousAnswerDiv.addClass('fade-in');
+                                    questionItem.find('.grade').addClass('fade-in');
+                                    questionItem.find('.feedback').addClass('fade-in');
+                                    questionItem.find('.correct-answer').addClass('fade-in'); // Fade in correct answer
+                                }, 200);
+                            }
+                        }
+                    }
+                });
+            } else {
+                hasPreviousSubmission = false;
+                if (isReadOnly) {
+                    globalQuestions.forEach(question => {
+                        if (question.correctAnswer && question.correctAnswer.trim() !== '') {
+                            const questionItem = $(`div.question-item[data-qid="${question.id}"]`);
+                            if (questionItem.length > 0) {
+                                const correctAnswerDiv = questionItem.find('.correct-answer');
+                                let formattedCorrectAnswer = escapeHtml(question.correctAnswer);
+                                if ((question.type === 'single_choice' || question.type === 'multiple_choice') && Array.isArray(question.options)) {
+                                    const correctValues = question.correctAnswer.split(',').map(s => s.trim().toLowerCase()).filter(s => s !== '');
+                                    const correctLabels = correctValues.map(val => {
+                                        const optIndex = question.options.findIndex(opt => opt && opt.trim().toLowerCase() === val);
+                                        return optIndex !== -1 ? String.fromCharCode(65 + optIndex) : escapeHtml(val);
+                                    }).join(', ');
+                                    formattedCorrectAnswer = correctLabels || formattedCorrectAnswer;
+                                } else if (question.type === 'fill_blank' || question.type === 'essay') {
+                                    formattedCorrectAnswer = escapeHtml(question.correctAnswer.replace(/\n/g, '<br>') || '无');
+                                }
+                                correctAnswerDiv.find('.answer-text').html(formattedCorrectAnswer);
+                                correctAnswerDiv.show();
+                                setTimeout(() => {
+                                    correctAnswerDiv.addClass('fade-in');
+                                }, 200);
+                            }
+                        }
+                    });
+                }
+            }
+
+            if (!isReadOnly) {
+                if (hasPreviousSubmission) {
+                    $('.submit-btn').html('<i class="fas fa-save mr-2"></i> 修改并提交');
+                } else {
+                    $('.submit-btn').html('<i class="fas fa-check-circle mr-2"></i> 提交练习');
+                }
+            } else {
+                if (!$('.submit-btn').text().includes("练习已截止")) {
+                    $('.submit-btn').hide();
+                }
+                $('#answerForm input, #answerForm textarea').prop('disabled', true);
+            }
+
+
+        }).fail(function(xhr, status, error) {
+            console.error("Error loading previous answers:", error);
+            hasPreviousSubmission = false;
+            if (!isReadOnly) {
+                $('.submit-btn').html('<i class="fas fa-check-circle mr-2"></i> 提交练习');
+            }
+        });
+    }
+
+
+    function submitAnswers() {
+        if (isReadOnly && !$('.submit-btn').text().includes("练习已截止")) {
+            alert('当前为查看模式，不能提交答案。');
+            return;
+        }
+        if ($('.submit-btn').prop('disabled') && $('.submit-btn').text().includes("练习已截止")) {
+            alert('练习已截止，无法提交。');
+            return;
+        }
+
+
+        const payload = {practiceId: Number(practiceId), answers: []};
+        globalQuestions.forEach(q => {
+            let val = '';
+            if (q.type === 'multiple_choice') {
+                val = $(`input[name="q${q.id}"]:checked`).map((i, e) => $(e).val()).get().join(',');
+            } else if (q.type === 'single_choice') {
+                val = $(`input[name="q${q.id}"]:checked`).val() || '';
+            } else {
+                val = $(`div.question-item[data-qid="${q.id}"] textarea[name="q${q.id}"]`).val() || '';
+            }
+            payload.answers.push({questionId: q.id, studentAnswer: val.trim()});
+        });
+
+        const submitBtn = $('.submit-btn');
+        const originalButtonText = submitBtn.html();
+        submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i> 正在提交...');
+
+        $.ajax({
+            url: '/Anotherview/api/student/submit',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(payload),
+            success(response) {
+                let message = '提交成功🎉';
+                if (response && response.operation === 'updated') {
+                    message = '修改成功🎉';
+                } else if (response && response.message) {
+                    message = response.message;
+                }
+                alert(message);
+                if (response && response.operation === 'updated') {
+                    submitBtn.html('<i class="fas fa-save mr-2"></i> 修改成功');
+                } else {
+                    submitBtn.html('<i class="fas fa-check-circle mr-2"></i> 提交成功');
+                }
+
+                setTimeout(() => {
+                    if (lessonId) window.location.href = `/Anotherview/html/student/student-list-practice.html?lesson_id=${lessonId}`;
+                    else history.back();
+                }, 1500);
+            },
+            error(xhr) {
+                console.error("Submission failed:", xhr);
+                submitBtn.prop('disabled', false).html(originalButtonText);
+                alert('提交失败: ' + (xhr.responseJSON?.message || xhr.statusText || '未知错误'));
+            }
+        });
+    }
+
+    function goBack() {
+        if (lessonId) {
+            window.location.href = `/Anotherview/html/student/student-list-practice.html?lesson_id=${lessonId}`;
+        } else {
+            if (history.length > 1) {
+                history.back();
+            } else {
+                window.location.href = '/Anotherview/html/student/student.html';
+            }
+        }
+    }
+
+    function escapeHtml(str) {
+        if (str === null || str === undefined) return '';
+        return str.toString()
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+</script>
+</body>
+</html>

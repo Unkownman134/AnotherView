@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>练习列表</title>
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link rel="icon" href="/Anotherview/favicon.ico" type="image/x-icon" />
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #f3f4f6;
+            color: #333;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1100px;
+        }
+
+        #header {
+            background: linear-gradient(to right, #6366f1, #818cf8);
+            padding: 1.5rem 2rem;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            border-radius: 12px;
+            color: white;
+            animation: slideInDown 0.8s ease-out;
+        }
+
+        @keyframes slideInDown {
+            0% { transform: translateY(-100px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+
+        #header h2 {
+            flex-grow: 1;
+            margin: 0;
+            font-size: 2rem;
+            display: flex;
+            align-items: center;
+            font-weight: 700;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+        }
+
+        #header h2 i {
+            margin-right: 1rem;
+            color: #c7d2fe;
+        }
+
+        .btn-view, .btn-submit {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+            z-index: 1;
+        }
+
+        .btn-view {
+            background-color: #6366f1;
+            color: white;
+        }
+
+        .btn-view:hover {
+            background-color: #4f46e5;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .btn-submit {
+            background-color: #10b981;
+            color: white;
+        }
+
+        .btn-submit:hover {
+            background-color: #059669;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+        }
+
+        .btn-view::after, .btn-submit::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%, -50%);
+            transform-origin: 50% 50%;
+            z-index: -1;
+        }
+
+        .btn-view:focus:not(:active)::after,
+        .btn-submit:focus:not(:active)::after {
+            animation: ripple 1s ease-out;
+        }
+
+        @keyframes ripple {
+            0% {
+                opacity: 0.5;
+                transform: scale(0, 0);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(20, 20);
+            }
+        }
+
+        .practice-list-container {
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e0e7ff;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            0% { transform: translateY(20px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+
+
+        .practice-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .practice-table th,
+        .practice-table td {
+            padding: 1.2rem 1.5rem;
+            text-align: left;
+            border-bottom: 1px solid #eef2ff;
+        }
+
+        .practice-table thead tr {
+            background-color: #e0e7ff;
+            color: #3730a3;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+        }
+
+        .practice-table tbody tr {
+            transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .practice-table tbody tr.fade-in {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+
+        .practice-table tbody tr:hover {
+            background-color: #f3f4f6;
+            transform: translateX(8px);
+            box-shadow: -8px 0 0 #6366f1;
+        }
+
+        .practice-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .status-notstarted {
+            color: #4f46e5;
+            font-weight: 600;
+        }
+
+        .status-inprogress {
+            color: #f59e0b;
+            font-weight: 600;
+        }
+
+        .status-ended {
+            color: #ef4444;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .practice-table, .practice-table thead, .practice-table tbody, .practice-table th, .practice-table td, .practice-table tr {
+                display: block;
+            }
+
+            .practice-table thead tr {
+                position: absolute;
+                top: -9999px;
+                left: -9999px;
+            }
+
+            .practice-table tr {
+                border: 1px solid #e0e7ff;
+                margin-bottom: 1rem;
+                border-radius: 8px;
+                overflow: hidden;
+            }
+
+            .practice-table td {
+                border: none;
+                border-bottom: 1px solid #eee;
+                position: relative;
+                padding-left: 50%;
+                text-align: right;
+            }
+
+            .practice-table td:before {
+                position: absolute;
+                top: 0;
+                left: 6px;
+                width: 45%;
+                padding-right: 10px;
+                white-space: nowrap;
+                content: attr(data-label);
+                font-weight: bold;
+                text-align: left;
+                color: #4b5563;
+            }
+
+            .practice-table td:last-child {
+                border-bottom: 0;
+            }
+
+            .practice-table tbody tr:hover {
+                transform: none;
+                box-shadow: none;
+                background-color: #f3f4f6;
+            }
+            .practice-table tbody tr.fade-in {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a1a1a1;
+        }
+
+        .shimmer {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: -200% 0;
+            }
+            100% {
+                background-position: 200% 0;
+            }
+        }
+
+        .loader {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid #6366f1;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        #loading-message, #no-data-message {
+            transition: opacity 0.5s ease;
+        }
+    </style>
+</head>
+<body class="p-6">
+<div class="container mx-auto">
+    <div id="header">
+        <button onclick="window.location.href='/Anotherview/html/student/student.html'" class="btn-view"><i class="fas fa-arrow-left mr-2"></i> 返回</button>
+        <h2 id="lessonTitle"><i class="fas fa-book-open"></i> 课程练习列表</h2>
+    </div>
+
+    <div class="practice-list-container">
+        <table class="practice-table">
+            <thead>
+            <tr>
+                <th>#</th>
+                <th>练习名称</th>
+                <th>题数</th>
+                <th>截止时间</th>
+                <th>完成进度</th>
+                <th>分数</th>
+                <th>状态</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+            <tbody id="practiceList">
+            </tbody>
+        </table>
+        <div id="loading-message" class="text-center py-8 text-gray-500" style="display: none;" aria-live="polite">
+            <div class="loader mb-3" role="status" aria-label="加载中"></div>
+            <p>正在加载练习数据...</p>
+        </div>
+        <div id="no-data-message" class="text-center py-8 text-gray-500" style="display: none;" aria-live="polite">
+            <i class="fas fa-search text-4xl mb-2 text-gray-300" aria-hidden="true"></i>
+            <p>没有找到匹配的练习。</p>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const lessonId = urlParams.get('lesson_id');
+
+    $(function () {
+        $.get(`/Anotherview/api/student/lessonInfo?lesson_id=${lessonId}`, function (lesson) {
+            $('#lessonTitle').append(`: ${escapeHtml(lesson.title)}`);
+        }).fail(function() {
+            $('#lessonTitle').append(': 课程信息加载失败');
+        });
+
+        loadPractices();
+    });
+
+    function loadPractices() {
+        $("#loading-message").show();
+        $("#no-data-message").hide();
+        $("#practiceList").empty();
+
+        for (let i = 0; i < 5; i++) {
+            $("#practiceList").append(`
+                <tr>
+                    <td colspan="8" class="py-4">
+                        <div class="shimmer w-full h-6 rounded-md"></div>
+                    </td>
+                </tr>
+            `);
+        }
+
+        $.get(`/Anotherview/api/student/practices?lesson_id=${lessonId}`, function (practices) {
+            setTimeout(() => {
+                renderPractices(practices);
+            }, 500);
+        }).fail(function(xhr, status, error) {
+            setTimeout(() => {
+                console.error("Error loading practices:", error);
+                $('#practiceList').html('');
+                $("#loading-message").hide();
+                $("#no-data-message").html(`
+                    <i class="fas fa-exclamation-circle text-4xl mb-2 text-red-400" aria-hidden="true"></i>
+                    <p>加载练习列表失败。</p>
+                `).show();
+            }, 500);
+        });
+    }
+
+    function renderPractices(practices) {
+        const tbody = $('#practiceList');
+        tbody.empty();
+
+        $("#loading-message").hide();
+
+        if (practices.length === 0) {
+            $("#no-data-message").html(`
+                     <i class="fas fa-box-open text-4xl mb-2 text-gray-300" aria-hidden="true"></i>
+                    <p>本课程下没有练习。</p> `).show();
+            return;
+        } else {
+            $("#no-data-message").hide();
+        }
+
+        practices.forEach((practice, index) => {
+            const status = practice.status;
+            const statusText = status === 'not_started' ? "未开始" : status === 'ended' ? "已截止" : "进行中";
+            const statusClass = status === 'not_started' ? "status-notstarted" : status === 'ended' ? "status-ended" : "status-inprogress";
+
+            let completionDisplay = '-';
+            if (status !== 'not_started' && practice.completedQuestions !== undefined && practice.questionNum !== undefined && practice.questionNum > 0) {
+                completionDisplay = `${practice.completedQuestions}/${practice.questionNum}`;
+            } else if (status !== 'not_started' && practice.questionNum === 0) {
+                completionDisplay = '0/0';
+            }
+
+            let scoreDisplay = '-';
+            if (status === 'ended' && practice.obtainedScore !== null && practice.totalScore !== null) {
+                scoreDisplay = `${practice.obtainedScore !== undefined ? practice.obtainedScore.toFixed(2) : '-'} / ${practice.totalScore !== undefined ? practice.totalScore.toFixed(2) : '-'}`;
+            }
+
+            let buttonHtml = '';
+            if (status === 'not_started') {
+                buttonHtml = '<span class="text-gray-500">尚未开始</span>';
+            } else if (status === 'ended') {
+                buttonHtml = `
+                         <button class="btn-view"
+                                 onclick="handlePracticeClick('${practice.id}', '${status}')">
+                             <i class="fas fa-eye mr-1"></i> 查看
+                         </button>
+                     `;
+            } else {
+                buttonHtml = `
+                         <button class="btn-submit"
+                                 onclick="handlePracticeClick('${practice.id}', '${status}')">
+                             <i class="fas fa-edit mr-1"></i> 作答
+                         </button>
+                     `;
+            }
+
+
+            const endAt = practice.endAt ? new Date(practice.endAt).toLocaleString() : '无截止时间';
+
+            const row = $(`
+                     <tr>
+                         <td data-label="#">${index + 1}</td>
+                         <td data-label="练习名称">${escapeHtml(practice.title || '无标题')}</td>
+                         <td data-label="题数">${practice.questionNum || 0}</td>
+                         <td data-label="截止时间">${endAt}</td>
+                         <td data-label="完成进度">${completionDisplay}</td>
+                         <td data-label="分数">${scoreDisplay}</td>
+                         <td data-label="状态" class="${statusClass}">${statusText}</td>
+                         <td data-label="操作">${buttonHtml}</td>
+                     </tr>
+                 `);
+            tbody.append(row);
+
+            setTimeout(() => {
+                row.addClass('fade-in');
+            }, 50 * index);
+        });
+    }
+
+    function handlePracticeClick(practiceId, status) {
+        const mode = status === 'ended' ? 'view' : 'submit';
+        window.location.href = `student-list-question.html?practice_id=${practiceId}&lesson_id=${lessonId}&mode=${mode}`;
+    }
+
+    function escapeHtml(str) {
+        if (str === null || str === undefined) return '';
+        return str.toString().replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+</script>
+</body>
+</html>
