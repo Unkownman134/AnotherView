@@ -13,6 +13,36 @@ public class LessonService {
     private LessonDao lessonDao = new LessonDao();
 
     /**
+     * 根据课程ID获取课程信息
+     * @param lessonId 课程ID
+     * @return 课程实体，如果未找到则返回null
+     */
+    public LessonEntity getLessonById(int lessonId) {
+        logger.info("尝试获取课程 ID {}。", lessonId);
+        try {
+            return lessonDao.getLessonById(lessonId);
+        } catch (Exception e) {
+            logger.error("获取课程 ID {} 时发生异常。", lessonId, e);
+            return null;
+        }
+    }
+
+    /**
+     * 根据教师ID获取该教师负责的所有课程信息
+     * @param teacherId 教师ID
+     * @return 课程实体列表
+     */
+    public List<LessonEntity> getLessonsByTeacherId(int teacherId) {
+        logger.info("尝试获取教师 ID {} 的所有课程。", teacherId);
+        try {
+            return lessonDao.getLessonsByTeacherId(teacherId);
+        } catch (Exception e) {
+            logger.error("获取教师 ID {} 的课程时发生异常。", teacherId, e);
+            return null;
+        }
+    }
+
+    /**
      * 获取所有课程的业务逻辑
      * @return 课程实体列表
      */

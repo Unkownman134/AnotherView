@@ -112,7 +112,7 @@ public class StudentDao {
                 studentId = rs.getInt(1);
                 logger.debug("获取到新学生的 student_id: {}", studentId);
             } else {
-                logger.error("未能获取新学生的 student_id，学号: {}", student.getStudentNumber());
+                logger.error("未能获取新学生的 student_id，学号: {}。", student.getStudentNumber());
                 return false;
             }
 
@@ -131,7 +131,7 @@ public class StudentDao {
 
             affectedRows = pstmtClassStudent.executeUpdate();
             if (affectedRows == 0) {
-                logger.warn("添加学生与班级关联失败，学生ID: {}, 班级ID: {}", studentId, classId);
+                logger.warn("添加学生与班级关联失败，学生ID: {}, 班级ID: {}.", studentId, classId);
                 return false;
             }
             logger.debug("添加学生与班级关联影响行数: {}", affectedRows);
@@ -140,10 +140,16 @@ public class StudentDao {
             logger.info("成功添加学生信息并关联班级，学号: {}", student.getStudentNumber());
 
         } catch (SQLException e) {
-            logger.error("添加学生信息或关联班级时发生数据库异常，学号: {}", student.getStudentNumber(), e);
+            logger.error("添加学生信息或关联班级时发生数据库异常，学号: {}.", student.getStudentNumber(), e);
         } finally {
-            DBUtils.close(null, pstmtStudent, rs);
-            DBUtils.close(conn, pstmtClassStudent);
+            try {
+                if (pstmtStudent != null) pstmtStudent.close();
+                if (rs != null) rs.close();
+                if (pstmtClassStudent != null) pstmtClassStudent.close();
+            } catch (SQLException closeEx) {
+                logger.error("关闭 PreparedStatement 时发生异常。", closeEx);
+            }
+            DBUtils.close(conn, null, null);
             logger.debug("关闭数据库资源。");
         }
         logger.debug("完成添加学生信息操作，学号: {}，结果: {}", student.getStudentNumber(), success ? "成功" : "失败");
@@ -250,8 +256,8 @@ public class StudentDao {
         try {
             conn = DBUtils.getConnection();
             String sql = "SELECT s.student_id, s.student_number, s.name, s.classof " +
-                    "FROM student s JOIN class c ON s.classof = c.name " +
-                    "WHERE c.class_id IN (";
+                    "FROM student s JOIN class_student cs ON s.student_id = cs.student_id " +
+                    "WHERE cs.class_id IN (";
             for (int i = 0; i < classIds.size(); i++) {
                 sql += "?";
                 if (i < classIds.size() - 1) {
@@ -394,6 +400,39 @@ public class StudentDao {
             logger.debug("关闭数据库资源。");
         }
         return lessonIds;
+    }
+
+    /**
+     * 获取学生已关联的班级ID列表
+     * @param studentId 学生ID
+     * @return 班级ID列表
+     */
+    public List<Integer> getAssociatedClassIds(int studentId) {
+        logger.debug("尝试获取学生 ID {} 已关联的班级ID列表。", studentId);
+        List<Integer> classIds = new ArrayList<>();
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        try {
+            conn = DBUtils.getConnection();
+            String sql = "SELECT class_id FROM class_student WHERE student_id = ?";
+            logger.debug("执行 SQL: {} with studentId = {}", sql, studentId);
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, studentId);
+            rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                classIds.add(rs.getInt("class_id"));
+            }
+            logger.debug("成功获取学生 ID {} 关联的 {} 个班级ID。", studentId, classIds.size());
+        } catch (SQLException e) {
+            logger.error("获取学生 ID {} 关联的班级ID列表时发生数据库异常。", studentId, e);
+        } finally {
+            DBUtils.close(conn, pstmt, rs);
+            logger.debug("关闭数据库资源。");
+        }
+        return classIds;
     }
 
     /**

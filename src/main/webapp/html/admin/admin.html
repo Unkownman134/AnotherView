@@ -511,6 +511,18 @@
                 </div>
 
                 <div class="flex flex-col flex-grow">
+                    <label for="student-email-filter"
+                           class="block text-gray-700 text-sm font-bold mb-1 flex items-center">
+                        <i class="fas fa-filter text-blue-500 mr-2" aria-hidden="true"></i>
+                        筛选邮箱:
+                    </label>
+                    <input type="email" id="student-email-filter"
+                           placeholder="输入学生邮箱"
+                           class="shadow appearance-none border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                           aria-label="筛选学生邮箱">
+                </div>
+
+                <div class="flex flex-col flex-grow">
                     <label for="student-class-filter"
                            class="block text-gray-700 text-sm font-bold mb-1 flex items-center">
                         <i class="fas fa-filter text-blue-500 mr-2" aria-hidden="true"></i>
@@ -939,11 +951,11 @@
                 $("#username").text(admin.name);
                 $("#dashboard-admin-name").text(admin.name);
                 $personalInfoContent.append(`
-                    <div class="info-item"><i class="fas fa-id-card" aria-hidden="true"></i><strong>管理员ID:</strong> ${admin.id || 'N\A'}</div>
-                    <div class="info-item"><i class="fas fa-user" aria-hidden="true"></i><strong>姓名:</strong> ${admin.name || 'N\A'}</div>
-                    <div class="info-item"><i class="fas fa-envelope" aria-hidden="true"></i><strong>邮箱:</strong> ${admin.email || 'N\A'}</div>
-                    <div class="info-item"><i class="fas fa-calendar-alt" aria-hidden="true"></i><strong>创建日期:</strong> ${admin.createdAt ? formatDisplayDateTime(admin.createdAt) : 'N\A'}</div>
-                    <div class="info-item"><i class="fas fa-clock" aria-hidden="true"></i><strong>上次登录:</strong> ${admin.lastLogin ? formatDisplayDateTime(admin.lastLogin) : 'N\A'}</div>
+                    <div class="info-item"><i class="fas fa-id-card" aria-hidden="true"></i><strong>管理员ID:</strong> ${admin.id || 'N\\A'}</div>
+                    <div class="info-item"><i class="fas fa-user" aria-hidden="true"></i><strong>姓名:</strong> ${admin.name || 'N\\A'}</div>
+                    <div class="info-item"><i class="fas fa-envelope" aria-hidden="true"></i><strong>邮箱:</strong> ${admin.email || 'N\\A'}</div>
+                    <div class="info-item"><i class="fas fa-calendar-alt" aria-hidden="true"></i><strong>创建日期:</strong> ${admin.createdAt ? formatDisplayDateTime(admin.createdAt) : 'N\\A'}</div>
+                    <div class="info-item"><i class="fas fa-clock" aria-hidden="true"></i><strong>上次登录:</strong> ${admin.lastLogin ? formatDisplayDateTime(admin.lastLogin) : 'N\\A'}</div>
                 `);
             } else {
                 $personalInfoContent.html(`
@@ -1030,16 +1042,16 @@
             const difficultyDisplay = getDifficultyDisplay(question.difficulty);
             const row = $(`
                 <tr class="border-b border-gray-200 hover:bg-blue-50" data-index="${index}">
-                    <td class="py-3 px-6 text-left font-semibold">${question.id || 'N\A'}</td>
-                    <td class="py-3 px-6 text-left">${question.lessonId || 'N\A'}</td>
-                    <td class="py-3 px-6 text-left max-w-xs overflow-hidden text-ellipsis whitespace-nowrap" title="${question.content}">${question.content || 'N\A'}</td>
+                    <td class="py-3 px-6 text-left font-semibold">${question.id || 'N\\A'}</td>
+                    <td class="py-3 px-6 text-left">${question.lessonId || 'N\\A'}</td>
+                    <td class="py-3 px-6 text-left max-w-xs overflow-hidden text-ellipsis whitespace-nowrap" title="${question.content}">${question.content || 'N\\A'}</td>
                     <td class="py-3 px-6 text-left">
                         <span class="badge bg-blue-100 border border-blue-300 text-blue-800">${typeDisplay}</span>
                     </td>
                     <td class="py-3 px-6 text-left">
                         <span class="badge bg-gray-100 border border-gray-300 ${difficultyDisplay.class}">${difficultyDisplay.text}</span>
                     </td>
-                    <td class="py-3 px-6 text-left">${question.score || 'N\A'}</td>
+                    <td class="py-3 px-6 text-left">${question.score || 'N\\A'}</td>
                 </tr>
             `);
             $questionListTbody.append(row);
@@ -1093,8 +1105,8 @@
         classes.forEach((cls, index) => {
             const row = $(`
                 <tr class="border-b border-gray-200 hover:bg-blue-50 cursor-pointer" data-class-id="${cls.id}" data-index="${index}" onclick="toggleClassDetails(${cls.id}, this, 'class')">
-                    <td class="py-3 px-6 text-left font-semibold">${cls.id || 'N\A'}</td>
-                    <td class="py-3 px-6 text-left">${cls.name || 'N\A'}</td>
+                    <td class="py-3 px-6 text-left font-semibold">${cls.id || 'N\\A'}</td>
+                    <td class="py-3 px-6 text-left">${cls.name || 'N\\A'}</td>
                     <td class="py-3 px-6 text-center">
                         <i class="fas fa-chevron-down text-blue-500 transition-transform duration-300 ${expandedClassRows.has(cls.id) ? 'rotate-180' : ''}"></i>
                     </td>
@@ -1212,21 +1224,19 @@
         filteredTeachers.forEach((teacher, index) => {
             allTeachersMap.set(teacher.id, teacher.name);
             $.get("/Anotherview/api/adminInfo", {action: "getTeacherClasses", teacherId: teacher.id}, function (classResponse) {
-                let associatedClassName = "未分配";
-                let associatedClassId = -1;
+                let associatedClassNames = "未分配";
                 if (classResponse.success && classResponse.associatedClassIds && classResponse.associatedClassIds.length > 0) {
-                    associatedClassId = classResponse.associatedClassIds[0];
-                    associatedClassName = allClassesMap.get(associatedClassId) || `ID: ${associatedClassId}`;
+                    associatedClassNames = classResponse.associatedClassIds.map(classId => allClassesMap.get(classId) || `ID: ${classId}`).join(', ');
                 }
 
                 const row = $(`
                     <tr class="border-b border-gray-200 hover:bg-blue-50" data-teacher-id="${teacher.id}">
-                        <td class="py-3 px-6 text-left font-semibold">${teacher.id || 'N\A'}</td>
-                        <td class="py-3 px-6 text-left">${teacher.name || 'N\A'}</td>
-                        <td class="py-3 px-6 text-left">${teacher.email || 'N\A'}</td>
-                        <td class="py-3 px-6 text-left" id="teacher-${teacher.id}-class-name">${associatedClassName}</td>
+                        <td class="py-3 px-6 text-left font-semibold">${teacher.id || 'N\\A'}</td>
+                        <td class="py-3 px-6 text-left">${teacher.name || 'N\\A'}</td>
+                        <td class="py-3 px-6 text-left">${teacher.email || 'N\\A'}</td>
+                        <td class="py-3 px-6 text-left" id="teacher-${teacher.id}-class-name" title="${associatedClassNames}">${associatedClassNames}</td>
                         <td class="py-3 px-6 text-left">
-                            <button onclick="openSelectClassModal(${teacher.id}, '${teacher.name}', ${associatedClassId})"
+                            <button onclick="openSelectClassModal(${teacher.id}, '${teacher.name}')"
                                     class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all">
                                 <i class="fas fa-edit mr-1"></i>管理班级
                             </button>
@@ -1238,12 +1248,12 @@
             }).fail((xhr) => {
                 const row = $(`
                     <tr class="border-b border-gray-200 hover:bg-blue-50" data-teacher-id="${teacher.id}">
-                        <td class="py-3 px-6 text-left font-semibold">${teacher.id || 'N\A'}</td>
-                        <td class="py-3 px-6 text-left">${teacher.name || 'N\A'}</td>
-                        <td class="py-3 px-6 text-left">${teacher.email || 'N\A'}</td>
+                        <td class="py-3 px-6 text-left font-semibold">${teacher.id || 'N\\A'}</td>
+                        <td class="py-3 px-6 text-left">${teacher.name || 'N\\A'}</td>
+                        <td class="py-3 px-6 text-left">${teacher.email || 'N\\A'}</td>
                         <td class="py-3 px-6 text-left" id="teacher-${teacher.id}-class-name">加载失败</td>
                         <td class="py-3 px-6 text-left">
-                            <button onclick="openSelectClassModal(${teacher.id}, '${teacher.name}', -1)"
+                            <button onclick="openSelectClassModal(${teacher.id}, '${teacher.name}')"
                                     class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all">
                                 <i class="fas fa-edit mr-1"></i>管理班级
                             </button>
@@ -1323,11 +1333,11 @@
             allSemestersMap.set(semester.id, semester.name);
             const row = $(`
                 <tr class="border-b border-gray-200 hover:bg-blue-50" data-semester-id="${semester.id}">
-                    <td class="py-3 px-6 text-left font-semibold">${semester.id || 'N\A'}</td>
-                    <td class="py-3 px-6 text-left">${semester.name || 'N\A'}</td>
-                    <td class="py-3 px-6 text-left">${semester.startDate || 'N\A'}</td>
-                    <td class="py-3 px-6 text-left">${semester.endDate || 'N\A'}</td>
-                    <td class="py-3 px-6 text-left">${semester.createdAt ? formatDisplayDateTime(semester.createdAt) : 'N\A'}</td>
+                    <td class="py-3 px-6 text-left font-semibold">${semester.id || 'N\\A'}</td>
+                    <td class="py-3 px-6 text-left">${semester.name || 'N\\A'}</td>
+                    <td class="py-3 px-6 text-left">${semester.startDate || 'N\\A'}</td>
+                    <td class="py-3 px-6 text-left">${semester.endDate || 'N\\A'}</td>
+                    <td class="py-3 px-6 text-left">${semester.createdAt ? formatDisplayDateTime(semester.createdAt) : 'N\\A'}</td>
                 </tr>
             `);
             $semesterListTbody.append(row);
@@ -1407,8 +1417,8 @@
             const semesterName = allSemestersMap.get(lesson.semesterId) || '未知学期';
             const row = $(`
                 <tr class="border-b border-gray-200 hover:bg-blue-50 cursor-pointer" data-lesson-id="${lesson.id}" data-index="${index}" onclick="toggleClassDetails(${lesson.id}, this, 'lesson')">
-                    <td class="py-3 px-6 text-left font-semibold">${lesson.id || 'N\A'}</td>
-                    <td class="py-3 px-6 text-left max-w-xs overflow-hidden text-ellipsis whitespace-nowrap" title="${lesson.title}">${lesson.title || 'N\A'}</td>
+                    <td class="py-3 px-6 text-left font-semibold">${lesson.id || 'N\\A'}</td>
+                    <td class="py-3 px-6 text-left max-w-xs overflow-hidden text-ellipsis whitespace-nowrap" title="${lesson.title}">${lesson.title || 'N\\A'}</td>
                     <td class="py-3 px-6 text-left max-w-xs overflow-hidden text-ellipsis whitespace-nowrap" title="${lesson.description}">${lesson.description || '无'}</td>
                     <td class="py-3 px-6 text-left">${semesterName}</td>
                     <td class="py-3 px-6 text-left" id="lesson-${lesson.id}-teacher-name">${teacherName}</td>
@@ -1446,7 +1456,7 @@
                         </div>
                         <div class="flex flex-col gap-2 text-gray-700 mt-4">
                             <p><strong>描述:</strong> <span id="lesson-${lesson.id}-description">${lesson.description || '无'}</span></p>
-                            <p><strong>创建时间:</strong> <span id="lesson-${lesson.id}-createdAt">${lesson.createdAt ? formatDisplayDateTime(lesson.createdAt) : 'N\A'}</span></p>
+                            <p><strong>创建时间:</strong> <span id="lesson-${lesson.id}-createdAt">${lesson.createdAt ? formatDisplayDateTime(lesson.createdAt) : 'N\\A'}</span></p>
                         </div>
                     </td>
                 </tr>
@@ -1791,40 +1801,69 @@
         loadTeachersForLesson(lessonId);
     }
 
-    function openSelectClassModal(teacherId, teacherName, currentClassId) {
+    function openSelectClassModal(teacherId, teacherName) {
         currentTeacherIdForClass = teacherId;
         currentTeacherNameForClass = teacherName;
         $("#select-class-modal-title").text(`为 ${teacherName} 选班`);
         const $classList = $("#modal-class-list");
         $classList.empty();
+        $classList.html(`
+            <div class="loader mb-3" role="status" aria-label="加载中"></div>
+            <p class="text-center text-gray-500">正在加载班级列表...</p>
+        `);
+        $("#select-class-modal-save-btn").prop('disabled', true);
 
         if (allClassesMap.size === 0) {
-            $classList.html('<p class="text-gray-600 text-center">没有可用的班级。</p>');
-            $("#select-class-modal-save-btn").prop('disabled', true);
-        } else {
-            $classList.append('<label class="inline-flex items-center mt-3 p-2 rounded-md hover:bg-blue-50 cursor-pointer transition-all w-full"><input type="radio" class="form-radio h-5 w-5 text-blue-600" name="selectedClass" value="" disabled selected><span class="ml-2 text-gray-700">请选择班级</span></label>');
-
-            allClassesMap.forEach((className, classId) => {
-                const isChecked = classId === currentClassId ? 'checked' : '';
-                $classList.append(`
-                    <label class="inline-flex items-center mt-3 p-2 rounded-md hover:bg-blue-50 cursor-pointer transition-all w-full">
-                        <input type="radio" class="form-radio h-5 w-5 text-blue-600" name="selectedClass" value="${classId}" ${isChecked}>
-                        <span class="ml-2 text-gray-700">${className}</span>
-                    </label>
-                `);
+            console.warn("allClassesMap is empty when opening select class modal. Attempting to reload classes.");
+            $.when(loadAllClasses()).done(function() {
+                openSelectClassModalLogic(teacherId, teacherName);
+            }).fail(function() {
+                $classList.html('<p class="text-center text-red-500"><i class="fas fa-exclamation-circle mr-1"></i>加载班级列表失败，请刷新页面重试。</p>');
+                $("#select-class-modal-save-btn").prop('disabled', true);
+                showNotification("加载班级列表失败，无法进行班级关联操作。", "error");
             });
-            $("#select-class-modal-save-btn").prop('disabled', false);
+        } else {
+            openSelectClassModalLogic(teacherId, teacherName);
         }
+    }
+
+    function openSelectClassModalLogic(teacherId, teacherName) {
+        const $classList = $("#modal-class-list");
+        $classList.empty();
+
+        $.get("/Anotherview/api/adminInfo", {action: "getTeacherClasses", teacherId: teacherId})
+            .done(function(associatedClassesResponse) {
+                const currentClassIds = associatedClassesResponse.success && associatedClassesResponse.associatedClassIds ? associatedClassesResponse.associatedClassIds : [];
+
+                if (allClassesMap.size === 0) {
+                    $classList.html('<p class="text-gray-600 text-center">没有可用班级。</p>');
+                    $("#select-class-modal-save-btn").prop('disabled', true);
+                } else {
+                    allClassesMap.forEach((className, classId) => {
+                        const isChecked = currentClassIds.includes(classId) ? 'checked' : '';
+                        $classList.append(`
+                            <label class="inline-flex items-center mt-3 p-2 rounded-md hover:bg-blue-50 cursor-pointer transition-all w-full">
+                                <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600" name="selectedClasses" value="${classId}" ${isChecked}>
+                                <span class="ml-2 text-gray-700">${className}</span>
+                            </label>
+                        `);
+                    });
+                    $("#select-class-modal-save-btn").prop('disabled', false);
+                }
+            }).fail(function(xhr, status, error) {
+            $classList.html('<p class="text-center text-red-500"><i class="fas fa-exclamation-circle mr-1"></i>加载班级列表失败。</p>');
+            $("#select-class-modal-save-btn").prop('disabled', true);
+            console.error(`Failed to load associated classes for teacher ${teacherId} in modal:`, error, xhr.responseText);
+            showNotification(`加载教师 ${teacherId} 的已关联班级失败，请检查网络或刷新页面。`, "error");
+        });
 
         $("#select-class-modal").removeClass("hidden").addClass("flex");
     }
 
     function saveTeacherClass() {
-        const selectedClassId = $('input[name="selectedClass"]:checked').val();
-        if (!selectedClassId) {
-            showNotification("请选择一个班级！", "warning");
-            return;
-        }
+        const selectedClassIds = $('input[name="selectedClasses"]:checked').map(function () {
+            return $(this).val();
+        }).get();
 
         showNotification("正在保存班级关联...", "info");
         $("#select-class-modal-save-btn").prop('disabled', true);
@@ -1832,7 +1871,7 @@
         $.post("/Anotherview/api/adminInfo", {
             action: "updateTeacherClasses",
             teacherId: currentTeacherIdForClass,
-            classIds: selectedClassId
+            classIds: selectedClassIds.join(',')
         }, function (response) {
             if (response.success) {
                 showNotification("班级关联更新成功！", "success");
@@ -1996,12 +2035,14 @@
 
         const nameFilter = $('#student-name-filter').val().toLowerCase();
         const numberFilter = $('#student-number-filter').val().toLowerCase();
+        const emailFilter = $('#student-email-filter').val().toLowerCase();
         const classFilter = $('#student-class-filter').val().toLowerCase();
         const searchTerm = $("#student-search-input").val().trim().toLowerCase();
 
         let filteredStudents = students.filter(student => {
             const matchesName = nameFilter === '' || (student.name && student.name.toLowerCase().includes(nameFilter));
             const matchesNumber = numberFilter === '' || (student.studentNumber && student.studentNumber.toLowerCase().includes(numberFilter));
+            const matchesEmail = emailFilter === '' || (student.email && student.email.toLowerCase().includes(emailFilter));
             const matchesClass = classFilter === '' || (student.classof && student.classof.toLowerCase().includes(classFilter));
             const matchesSearch = searchTerm === '' ||
                 (student.name && student.name.toLowerCase().includes(searchTerm)) ||
@@ -2009,18 +2050,18 @@
                 (student.email && student.email.toLowerCase().includes(searchTerm)) ||
                 (student.school && student.school.toLowerCase().includes(searchTerm)) ||
                 (student.classof && student.classof.toLowerCase().includes(searchTerm));
-            return matchesName && matchesNumber && matchesClass && matchesSearch;
+            return matchesName && matchesNumber && matchesEmail && matchesClass && matchesSearch;
         });
 
         filteredStudents.forEach((student, index) => {
             const row = $(`
                 <tr class="border-b border-gray-200 hover:bg-blue-50" data-student-id="${student.id}">
-                    <td class="py-3 px-6 text-left font-semibold">${student.id || 'N\A'}</td>
-                    <td class="py-3 px-6 text-left">${student.studentNumber || 'N\A'}</td>
-                    <td class="py-3 px-6 text-left">${student.name || 'N\A'}</td>
-                    <td class="py-3 px-6 text-left">${student.email || 'N\A'}</td>
-                    <td class="py-3 px-6 text-left">${student.school || 'N\A'}</td>
-                    <td class="py-3 px-6 text-left">${student.classof || 'N\A'}</td>
+                    <td class="py-3 px-6 text-left font-semibold">${student.id || 'N\\A'}</td>
+                    <td class="py-3 px-6 text-left">${student.studentNumber || 'N\\A'}</td>
+                    <td class="py-3 px-6 text-left">${student.name || 'N\\A'}</td>
+                    <td class="py-3 px-6 text-left">${student.email || 'N\\A'}</td>
+                    <td class="py-3 px-6 text-left">${student.school || 'N\\A'}</td>
+                    <td class="py-3 px-6 text-left">${student.classof || 'N\\A'}</td>
                     <td class="py-3 px-6 text-left" id="student-${student.id}-lessons">加载中...</td>
                     <td class="py-3 px-6 text-left">
                         <button onclick="openEnrollCoursesModal(${student.id}, '${student.name}')"
@@ -2077,49 +2118,50 @@
         `);
         $("#enroll-courses-modal-save-btn").prop('disabled', true);
 
-        if (allLessonsData.length === 0) {
-            console.warn("allLessonsData is empty when opening enroll courses modal. Attempting to reload lessons.");
-            $.when(loadLessons()).done(function() {
-                openEnrollCoursesModalLogic(studentId, studentName);
-            }).fail(function() {
-                $lessonList.html('<p class="text-center text-red-500"><i class="fas fa-exclamation-circle mr-1"></i>加载课程列表失败，请刷新页面重试。</p>');
-                $("#enroll-courses-modal-save-btn").prop('disabled', true);
-                showNotification("加载课程列表失败，无法进行选课操作。", "error");
-            });
-        } else {
-            openEnrollCoursesModalLogic(studentId, studentName);
-        }
-    }
+        $.get("/Anotherview/api/adminInfo", {action: "getLessonsForStudentClass", studentId: studentId})
+            .done(function(classLessonsResponse) {
+                if (classLessonsResponse.success && classLessonsResponse.lessons) {
+                    const lessonsForStudentClass = classLessonsResponse.lessons;
 
-    function openEnrollCoursesModalLogic(studentId, studentName) {
-        const $lessonList = $("#modal-lesson-list");
-        $lessonList.empty();
+                    $.get("/Anotherview/api/adminInfo", {action: "getStudentLessons", studentId: studentId})
+                        .done(function(associatedLessonsResponse) {
+                            const currentLessonIds = associatedLessonsResponse.success && associatedLessonsResponse.associatedLessonIds ? associatedLessonsResponse.associatedLessonIds : [];
 
-        $.get("/Anotherview/api/adminInfo", {action: "getStudentLessons", studentId: studentId})
-            .done(function(associatedLessonsResponse) {
-                const currentLessonIds = associatedLessonsResponse.success && associatedLessonsResponse.associatedLessonIds ? associatedLessonsResponse.associatedLessonIds : [];
+                            $lessonList.empty();
 
-                if (allLessonsData.length === 0) {
-                    $lessonList.html('<p class="text-gray-600 text-center">没有可用课程。</p>');
-                    $("#enroll-courses-modal-save-btn").prop('disabled', true);
-                } else {
-                    allLessonsData.forEach(lesson => {
-                        const isChecked = currentLessonIds.includes(lesson.id) ? 'checked' : '';
-                        const semesterName = allSemestersMap.get(lesson.semesterId) || '未知学期';
-                        $lessonList.append(`
-                        <label class="inline-flex items-center mt-3 p-2 rounded-md hover:bg-blue-50 cursor-pointer transition-all w-full">
-                            <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600" name="selectedLessons" value="${lesson.id}" ${isChecked}>
-                            <span class="ml-2 text-gray-700">${lesson.title} (${semesterName})</span>
-                        </label>
-                    `);
+                            if (lessonsForStudentClass.length === 0) {
+                                $lessonList.html('<p class="text-gray-600 text-center">该学生所在班级没有可用的课程。</p>');
+                                $("#enroll-courses-modal-save-btn").prop('disabled', true);
+                            } else {
+                                lessonsForStudentClass.forEach(lesson => {
+                                    const isChecked = currentLessonIds.includes(lesson.id) ? 'checked' : '';
+                                    const semesterName = allSemestersMap.get(lesson.semesterId) || '未知学期';
+                                    const teacherName = allTeachersMap.get(lesson.teacherId) || '未指定教师'; // Fetch teacher name
+                                    $lessonList.append(`
+                                        <label class="inline-flex items-center mt-3 p-2 rounded-md hover:bg-blue-50 cursor-pointer transition-all w-full">
+                                            <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600" name="selectedLessons" value="${lesson.id}" ${isChecked}>
+                                            <span class="ml-2 text-gray-700">${lesson.title} (${semesterName} - ${teacherName})</span>
+                                        </label>
+                                    `);
+                                });
+                                $("#enroll-courses-modal-save-btn").prop('disabled', false);
+                            }
+                        }).fail(function(xhr, status, error) {
+                        $lessonList.html('<p class="text-center text-red-500"><i class="fas fa-exclamation-circle mr-1"></i>加载学生已选课程失败。</p>');
+                        $("#enroll-courses-modal-save-btn").prop('disabled', true);
+                        console.error(`Failed to load associated lessons for student ${studentId} in modal:`, error, xhr.responseText);
+                        showNotification(`加载学生 ${studentId} 的已选课程失败，请检查网络或刷新页面。`, "error");
                     });
-                    $("#enroll-courses-modal-save-btn").prop('disabled', false);
+                } else {
+                    $lessonList.html('<p class="text-center text-gray-500">无法加载班级关联课程。</p>');
+                    $("#enroll-courses-modal-save-btn").prop('disabled', true);
+                    showNotification("加载班级关联课程失败。", "error");
                 }
             }).fail(function(xhr, status, error) {
             $lessonList.html('<p class="text-center text-red-500"><i class="fas fa-exclamation-circle mr-1"></i>加载课程列表失败。</p>');
             $("#enroll-courses-modal-save-btn").prop('disabled', true);
-            console.error(`Failed to load associated lessons for student ${studentId} in modal:`, error, xhr.responseText);
-            showNotification(`加载学生 ${studentId} 的已选课程失败，请检查网络或刷新页面。`, "error");
+            console.error(`Failed to load lessons for student's class:`, error, xhr.responseText);
+            showNotification(`加载学生班级关联课程失败，请检查网络或刷新页面。`, "error");
         });
 
         $("#enroll-courses-modal").removeClass("hidden").addClass("flex");
@@ -2190,7 +2232,7 @@
                 }, 2000);
             });
         }).fail(function (error) {
-            console.error("Error loading initial data:", error);
+            console.error("初始化数据加载失败:", error);
             showNotification("初始化数据加载失败，部分功能可能受限。", "error");
         });
 
@@ -2241,7 +2283,7 @@
             }, 300);
         });
 
-        $("#student-name-filter, #student-number-filter, #student-class-filter").on('input', function () {
+        $("#student-name-filter, #student-number-filter, #student-email-filter, #student-class-filter").on('input', function () {
             clearTimeout(this.filterTimer);
             this.filterTimer = setTimeout(() => {
                 renderStudents(allStudentsData);

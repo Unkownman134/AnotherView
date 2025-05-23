@@ -38,18 +38,18 @@ public class StudentRegisterServlet extends HttpServlet {
         logger.debug("接收到学生注册信息 - 学号: {}, 姓名: {}, 邮箱: {}, 学校: {}, 班级: {}", studentNumber, name, email, school, classof);
 
         logger.debug("调用 StudentService 进行注册，学号: {}", studentNumber);
-        boolean ok = studentService.register(studentNumber, name, email, school, classof, password);
-        logger.debug("StudentService.register 返回结果: {}", ok);
+        String registrationResult = studentService.register(studentNumber, name, email, school, classof, password);
+        logger.debug("StudentService.register 返回结果: {}", registrationResult);
 
         //创建一个Map对象用于构建JSON响应数据
         Map<String, Object> map = new HashMap<>();
-        if (ok) {
+        if ("success".equals(registrationResult)) {
             map.put("success", true);
             logger.info("学号 {} 注册成功，返回成功响应。", studentNumber);
         } else {
             map.put("success", false);
-            map.put("message", "学生已存在");
-            logger.warn("学号 {} 注册失败，学生已存在，返回失败响应。", studentNumber);
+            map.put("message", registrationResult);
+            logger.warn("学号 {} 注册失败，原因: {}，返回失败响应。", studentNumber, registrationResult);
         }
         response.setContentType("application/json;charset=utf-8");
         try {

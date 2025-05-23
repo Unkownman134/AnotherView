@@ -24,11 +24,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -328,6 +324,51 @@ public class AdminInfoServlet extends HttpServlet {
                     response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
                     responseMap.put("success", false);
                     responseMap.put("message", "获取学生关联课程数据时发生内部错误。");
+                }
+            }
+        } else if ("getLessonsForStudentClass".equals(action)) {
+            String studentIdStr = request.getParameter("studentId");
+            if (studentIdStr == null || studentIdStr.isEmpty()) {
+                logger.warn("请求缺少 studentId 参数，用于获取学生班级关联课程。");
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                responseMap.put("success", false);
+                responseMap.put("message", "缺少学生ID参数。");
+            } else {
+                try {
+                    int studentId = Integer.parseInt(studentIdStr);
+                    List<Integer> studentClassIds = studentService.getAssociatedClassIdsForStudent(studentId);
+                    Set<Integer> teacherIdsInStudentClasses = new HashSet<>();
+                    for (Integer classId : studentClassIds) {
+                        List<TeacherEntity> teachersInClass = teacherService.getTeachersByClassId(classId);
+                        teachersInClass.forEach(teacher -> teacherIdsInStudentClasses.add(teacher.getId()));
+                    }
+
+                    List<LessonEntity> availableLessons = new ArrayList<>();
+                    for (Integer teacherId : teacherIdsInStudentClasses) {
+                        List<LessonEntity> lessonsByTeacher = lessonService.getLessonsByTeacherId(teacherId);
+                        availableLessons.addAll(lessonsByTeacher);
+                    }
+
+                    List<LessonEntity> distinctLessons = availableLessons.stream()
+                            .collect(Collectors.toMap(LessonEntity::getId, lesson -> lesson, (existing, replacement) -> existing))
+                            .values()
+                            .stream()
+                            .collect(Collectors.toList());
+
+                    responseMap.put("success", true);
+                    responseMap.put("lessons", distinctLessons);
+                    responseMap.put("message", "学生班级关联课程数据加载成功。");
+                    logger.debug("成功获取学生 ID {} 班级关联的 {} 门课程。", studentId, distinctLessons.size());
+                } catch (NumberFormatException e) {
+                    logger.warn("获取学生班级关联课程时 studentId 参数格式无效: {}", studentIdStr, e);
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    responseMap.put("success", false);
+                    responseMap.put("message", "学生ID参数格式无效。");
+                } catch (Exception e) {
+                    logger.error("获取学生班级关联课程数据时发生异常，学生ID: {}", studentIdStr, e);
+                    response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                    responseMap.put("success", false);
+                    responseMap.put("message", "获取学生班级关联课程数据时发生内部错误。");
                 }
             }
         }

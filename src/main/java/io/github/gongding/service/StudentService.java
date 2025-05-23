@@ -22,9 +22,9 @@ public class StudentService {
      * @param school 学生学校
      * @param classof 学生班级
      * @param password 学生密码（明文）
-     * @return 如果注册成功返回true，如果学生已存在返回false
+     * @return 如果注册成功返回"success"，如果学生已存在返回"学生已存在"，如果班级不存在或数据库操作失败返回"班级不存在或注册失败"，如果发生其他异常返回"内部服务器错误"
      */
-    public boolean register(String studentNumber, String name, String email, String school, String classof, String password) {
+    public String register(String studentNumber, String name, String email, String school, String classof, String password) {
         logger.info("尝试注册学生，学号: {}", studentNumber);
         logger.debug("注册信息 - 姓名: {}, 邮箱: {}, 学校: {}, 班级: {}", name, email, school, classof);
 
@@ -32,7 +32,7 @@ public class StudentService {
             logger.debug("检查学号 {} 是否已存在。", studentNumber);
             if (studentDao.getStudentByStudentNumber(studentNumber) != null) {
                 logger.warn("注册失败，学号 {} 已存在。", studentNumber);
-                return false;
+                return "学生已存在";
             }
             logger.debug("学号 {} 不存在，可以注册。", studentNumber);
 
@@ -55,13 +55,14 @@ public class StudentService {
 
             if (success) {
                 logger.info("学号 {} 注册成功。", studentNumber);
+                return "success";
             } else {
-                logger.error("学号 {} 注册失败，数据库操作可能出现问题或返回false。", studentNumber);
+                logger.error("学号 {} 注册失败，数据库操作可能出现问题或班级不存在。", studentNumber);
+                return "班级不存在或注册失败";
             }
-            return success;
         } catch (Exception e) {
             logger.error("学号 {} 注册过程中发生异常。", studentNumber, e);
-            return false;
+            return "内部服务器错误";
         }
     }
 
@@ -159,6 +160,21 @@ public class StudentService {
             return studentDao.getAssociatedLessonIds(studentId);
         } catch (Exception e) {
             logger.error("获取学生 ID {} 关联课程时发生异常。", studentId, e);
+            return null;
+        }
+    }
+
+    /**
+     * 获取学生已关联的班级ID列表的业务逻辑
+     * @param studentId 学生ID
+     * @return 班级ID列表
+     */
+    public List<Integer> getAssociatedClassIdsForStudent(int studentId) {
+        logger.info("尝试获取学生 ID {} 已关联的班级ID列表。", studentId);
+        try {
+            return studentDao.getAssociatedClassIds(studentId);
+        } catch (Exception e) {
+            logger.error("获取学生 ID {} 关联班级时发生异常。", studentId, e);
             return null;
         }
     }
