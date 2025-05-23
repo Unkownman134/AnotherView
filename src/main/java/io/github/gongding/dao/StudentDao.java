@@ -5,7 +5,6 @@ import io.github.gongding.entity.StudentEntity;
 import io.github.gongding.util.DBUtils;
 
 import java.sql.*;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -346,7 +345,7 @@ public class StudentDao {
 
         try {
             conn = DBUtils.getConnection();
-            String sql = "SELECT student_id, student_number, name, email, school, classof, last_login, created_at FROM student";
+            String sql = "SELECT student_id, student_number, name, email, school, classof, password_salt, password_hash, last_login, created_at FROM student";
             logger.debug("执行 SQL: {}", sql);
             pstmt = conn.prepareStatement(sql);
             rs = pstmt.executeQuery();
