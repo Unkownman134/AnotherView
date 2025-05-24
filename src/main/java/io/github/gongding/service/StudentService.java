@@ -1,6 +1,7 @@
 package io.github.gongding.service;
 
 import io.github.gongding.dao.StudentDao;
+import io.github.gongding.entity.LessonEntity;
 import io.github.gongding.entity.StudentEntity;
 import io.github.gongding.util.PasswordUtils;
 
@@ -192,6 +193,38 @@ public class StudentService {
         } catch (Exception e) {
             logger.error("更新学生 ID {} 课程关联时发生异常。", studentId, e);
             return false;
+        }
+    }
+
+    /**
+     * 获取学生参与的课程列表的业务逻辑。
+     * @param studentNumber 学生学号
+     * @return 课程实体列表
+     */
+    public List<LessonEntity> getStudentLessons(String studentNumber) {
+        logger.info("尝试获取学号 {} 参与的课程列表。", studentNumber);
+        try {
+            List<LessonEntity> lessons = studentDao.getStudentLessons(studentNumber);
+            logger.debug("成功从 DAO 获取学号 {} 参与的 {} 门课程。", studentNumber, lessons.size());
+            return lessons;
+        } catch (Exception e) {
+            logger.error("获取学号 {} 参与的课程列表时发生异常。", studentNumber, e);
+            return null;
+        }
+    }
+
+    /**
+     * 根据学号获取学生实体。
+     * @param studentNumber 学生学号
+     * @return 学生实体，如果未找到则返回null
+     */
+    public StudentEntity getStudentByStudentNumber(String studentNumber) {
+        logger.info("尝试获取学号 {} 的学生实体。", studentNumber);
+        try {
+            return studentDao.getStudentByStudentNumber(studentNumber);
+        } catch (Exception e) {
+            logger.error("获取学号 {} 的学生实体时发生异常。", studentNumber, e);
+            return null;
         }
     }
 }

@@ -3,9 +3,9 @@ package io.github.gongding.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import io.github.gongding.dao.SemesterDao;
 import io.github.gongding.entity.SemesterEntity;
 import io.github.gongding.entity.TeacherEntity;
+import io.github.gongding.service.SemesterService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 @WebServlet("/api/teacher/semesters")
 public class TeacherSemestersServlet extends HttpServlet {
     private static final Logger logger = LoggerFactory.getLogger(TeacherSemestersServlet.class);
-    private final SemesterDao semesterDao = new SemesterDao();
+    private final SemesterService semesterService = new SemesterService();
     private final ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule())
             .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
@@ -50,8 +50,9 @@ public class TeacherSemestersServlet extends HttpServlet {
         logger.debug("教师已登录，姓名: {} (ID: {})。", teacherName, teacherId);
 
         try {
-            logger.debug("调用 SemesterDao 获取所有学期列表。");
-            List<SemesterEntity> semesters = semesterDao.getAllSemesters();
+            // 调用 Service 层获取所有学期列表
+            logger.debug("调用 SemesterService 获取所有学期列表。");
+            List<SemesterEntity> semesters = semesterService.getAllSemesters();
             logger.debug("成功获取 {} 个学期。", (semesters != null ? semesters.size() : 0));
 
             resp.setContentType("application/json;charset=utf-8");

@@ -2,11 +2,8 @@ package io.github.gongding.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.gongding.dao.ClassDao;
-import io.github.gongding.dao.LessonDao;
-import io.github.gongding.dao.PracticeDao;
-import io.github.gongding.entity.ClassEntity;
 import io.github.gongding.entity.TeacherEntity;
+import io.github.gongding.service.TeacherPracticeService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -31,10 +28,8 @@ import org.slf4j.LoggerFactory;
 @WebServlet("/api/teacher/practice")
 public class TeacherPracticeSubmitServlet extends HttpServlet {
     private static final Logger logger = LoggerFactory.getLogger(TeacherPracticeSubmitServlet.class);
-    private final PracticeDao practiceDao = new PracticeDao();
+    private final TeacherPracticeService teacherPracticeService = new TeacherPracticeService();
     private final ObjectMapper mapper = new ObjectMapper();
-    private final LessonDao lessonDao = new LessonDao();
-    private final ClassDao classDao = new ClassDao();
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
@@ -54,14 +49,12 @@ public class TeacherPracticeSubmitServlet extends HttpServlet {
         logger.debug("教师已登录，姓名: {} (ID: {})。", teacherName, teacherId);
 
         try {
-            //从请求的输入流中读取所有行，并使用换行符连接成一个完整的JSON字符串
             logger.debug("尝试从请求体读取并解析 JSON 数据。");
             String jsonBody = req.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
             logger.debug("请求体 JSON 字符串: {}", jsonBody);
             JsonNode rootNode = mapper.readTree(jsonBody);
             logger.debug("成功解析请求体 JSON 数据。");
 
-            //从JSON树结构中提取参数
             JsonNode titleNode = rootNode.get("title");
             JsonNode lessonIdNode = rootNode.get("lessonId");
             JsonNode classIdsNode = rootNode.get("classIds");
@@ -117,43 +110,10 @@ public class TeacherPracticeSubmitServlet extends HttpServlet {
                 return;
             }
 
-            logger.debug("调用 LessonDao 获取课程 ID {} 的信息以获取学期ID。", lessonId);
-            io.github.gongding.entity.LessonEntity lesson = lessonDao.getLessonById(lessonId);
-            if (lesson == null) {
-                logger.error("创建练习失败，未找到课程 ID {} 的信息。", lessonId);
-                resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid lesson ID");
-                return;
-            }
-            int semesterId = lesson.getSemesterId();
-            logger.debug("获取到课程 ID {} 的学期 ID: {}", lessonId, semesterId);
-
-            //获取班级名称并格式化为逗号分隔字符串
-            String classofString = "";
-            if (classIds != null && !classIds.isEmpty()) {
-                //创建一个列表用于存储班级名称
-                List<String> classNames = new ArrayList<>();
-                logger.debug("获取班级名称，共 {} 个班级ID。", classIds.size());
-                for (Integer classId : classIds) {
-                    logger.trace("获取班级 ID {} 的名称。", classId);
-                    ClassEntity cls = classDao.getClassById(classId);
-                    if (cls != null) {
-                        classNames.add(cls.getName());
-                        logger.trace("找到班级 ID {} 的名称: {}", classId, cls.getName());
-                    } else {
-                        logger.warn("创建练习时，班级 ID {} 在数据库中未找到。", classId);
-                    }
-                }
-                //使用Stream将班级名称列表连接成一个逗号分隔的字符串
-                classofString = classNames.stream().collect(Collectors.joining(","));
-                logger.debug("格式化后的班级信息字符串: '{}'", classofString);
-            } else {
-                logger.debug("没有关联的班级ID。");
-            }
-
-            logger.debug("调用 PracticeDao.createPractice 创建练习，教师ID: {}, 课程ID: {}, 学期ID: {}, 标题: '{}', 班级信息: '{}', 开始时间: {}, 结束时间: {}, 题目数量: {}",
-                    teacherId, lessonId, semesterId, title, classofString, startTime, endTime, (questionIds != null ? questionIds.length : 0));
-            int newPracticeId = practiceDao.createPractice(teacherId, lessonId, semesterId, title, classIds.stream().mapToInt(i -> i).toArray(), classofString, startTime, endTime, questionIds);
-            logger.debug("PracticeDao.createPractice 返回新练习 ID: {}", newPracticeId);
+            logger.debug("调用 TeacherPracticeService.createPracticeWithDetails 创建练习，教师ID: {}, 课程ID: {}, 标题: '{}', 班级ID列表: {}, 题目数量: {}",
+                    teacherId, lessonId, title, classIds, (questionIds != null ? questionIds.length : 0));
+            int newPracticeId = teacherPracticeService.createPracticeWithDetails(teacherId, title, lessonId, classIds, questionIds, startTime, endTime);
+            logger.debug("TeacherPracticeService.createPracticeWithDetails 返回新练习 ID: {}", newPracticeId);
 
             resp.setContentType("application/json");
             Map<String, Object> responseMap = new HashMap<>();
@@ -238,19 +198,18 @@ public class TeacherPracticeSubmitServlet extends HttpServlet {
         return new int[0];
     }
 
-    //用于构建简单的JSON响应结构
-    private static class Result {
-        //表示操作是否成功
-        public boolean success;
-        //操作结果的消息
-        public String message;
-
-        //构造方法
-        public Result(boolean success, String message) {
-            this.success = success;
-            this.message = message;
-        }
-    }
+//    private static class Result {
+//        //表示操作是否成功
+//        public boolean success;
+//        //操作结果的消息
+//        public String message;
+//
+//        //构造方法
+//        public Result(boolean success, String message) {
+//            this.success = success;
+//            this.message = message;
+//        }
+//    }
 
     @Override
     public void init() throws ServletException {
