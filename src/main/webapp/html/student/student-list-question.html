@@ -448,43 +448,57 @@
     let hasPreviousSubmission = false;
 
     $(function () {
-        $.get(`/Anotherview/api/student/practiceDetails?practice_id=${practiceId}${mode ? '&mode=' + mode : ''}`, function (practice) {
-            $('#practiceTitle').append(`: ${escapeHtml(practice.title || '无标题')}`);
-            const endTimeText = practice.endAt ? new Date(practice.endAt).toLocaleString() : '未设定';
-            $('#endTime').text(endTimeText);
+        $.get(`/Anotherview/api/student/practiceDetails?practice_id=${practiceId}${mode ? '&mode=' + mode : ''}`, function (response) {
+            if (response.success && response.practiceDetails) {
+                const practice = response.practiceDetails;
+                $('#practiceTitle').append(`: ${escapeHtml(practice.title || '无标题')}`);
+                const endTimeText = practice.endAt ? new Date(practice.endAt).toLocaleString() : '未设定';
+                $('#endTime').text(endTimeText);
 
-            if (practice.endAt && new Date(practice.endAt) < new Date()) {
-                isReadOnly = true;
-                $('.submit-btn').prop('disabled', true).html('<i class="fas fa-lock mr-2"></i> 练习已截止');
+                if (practice.endAt && new Date(practice.endAt) < new Date()) {
+                    isReadOnly = true;
+                    $('.submit-btn').prop('disabled', true).html('<i class="fas fa-lock mr-2"></i> 练习已截止');
+                }
+
+                if (isReadOnly) {
+                    $('#answerForm').addClass('readonly-mode');
+                }
+                loadQuestions(practiceId);
+            } else {
+                console.error("加载练习详情失败:", response.message);
+                $('#practiceTitle').append(': 练习信息加载失败');
+                $('#endTime').text('-');
+                $('#questionsContainer').html('<p class="text-red-500 text-center py-4"><i class="fas fa-exclamation-circle mr-2"></i>无法加载练习详情。</p>');
+                $("#loading-message").hide();
             }
-
-            if (isReadOnly) {
-                $('#answerForm').addClass('readonly-mode');
-            }
-            loadQuestions(practiceId);
-
-        }).fail(function(xhr, status, error) {
-            console.error("Error loading practice details:", error);
+        }).fail(function(xhr) {
+            console.error("加载练习详情请求失败:", xhr);
             $('#practiceTitle').append(': 练习信息加载失败');
             $('#endTime').text('-');
-            $('#questionsContainer').html('<p class="text-red-500 text-center py-4"><i class="fas fa-exclamation-circle mr-2"></i>无法加载练习详情和题目。</p>');
+            $('#questionsContainer').html('<p class="text-red-500 text-center py-4"><i class="fas fa-exclamation-circle mr-2"></i>无法加载练习详情。</p>');
             $("#loading-message").hide();
         });
     });
 
     function loadQuestions(pId) {
         $("#loading-message").show();
-        $.get(`/Anotherview/api/student/questions?practice_id=${pId}${mode ? '&mode=' + mode : ''}`, function (questions) {
-            globalQuestions = questions;
-            renderQuestions(questions);
-            if (questions.length > 0) {
-                loadPreviousAnswers(pId);
+        // 获取题目列表
+        $.get(`/Anotherview/api/student/questions?practice_id=${pId}${mode ? '&mode=' + mode : ''}`, function (response) {
+            $("#loading-message").hide();
+            if (response.success && response.questions) {
+                globalQuestions = response.questions;
+                renderQuestions(globalQuestions);
+                if (globalQuestions.length > 0) {
+                    loadPreviousAnswers(pId);
+                } else {
+                    if (!isReadOnly) $('.submit-btn').hide();
+                }
             } else {
-                $("#loading-message").hide();
-                if (!isReadOnly) $('.submit-btn').hide();
+                console.error("加载题目失败:", response.message);
+                $('#questionsContainer').html('<p class="text-red-500 text-center py-4"><i class="fas fa-exclamation-circle mr-2"></i>加载题目失败: ' + (response.message || '未知错误') + '</p>');
             }
-        }).fail(function(xhr, status, error) {
-            console.error("Error loading questions:", error);
+        }).fail(function(xhr) {
+            console.error("加载题目请求失败:", xhr);
             $('#questionsContainer').html('<p class="text-red-500 text-center py-4"><i class="fas fa-exclamation-circle mr-2"></i>加载题目失败。</p>');
             $("#loading-message").hide();
         });
@@ -555,65 +569,100 @@
                 container.find(`.question-item[data-qid="${q.id}"]`).addClass('fade-in');
             }, 100 * index);
         });
-        $("#loading-message").hide();
     }
 
     function loadPreviousAnswers(pId) {
-        $.get(`/Anotherview/api/student/previous-answers?practice_id=${pId}${mode ? '&mode=' + mode : ''}`, function (submission) {
-            if (submission && submission.answers && Array.isArray(submission.answers) && submission.answers.length > 0) {
-                hasPreviousSubmission = true;
-                submission.answers.forEach(subAnswer => {
-                    const questionItem = $(`div.question-item[data-qid="${subAnswer.questionId}"]`);
-                    if (questionItem.length > 0) {
-                        const question = globalQuestions.find(q => q.id === subAnswer.questionId);
-                        const studentAnswer = subAnswer.studentAnswer;
+        $.get(`/Anotherview/api/student/previous-answers?practice_id=${pId}${mode ? '&mode=' + mode : ''}`, function (response) {
+            if (response.success && response.submission) {
+                const submission = response.submission;
+                if (submission && submission.answers && Array.isArray(submission.answers) && submission.answers.length > 0) {
+                    hasPreviousSubmission = true;
+                    submission.answers.forEach(subAnswer => {
+                        const questionItem = $(`div.question-item[data-qid="${subAnswer.questionId}"]`);
+                        if (questionItem.length > 0) {
+                            const question = globalQuestions.find(q => q.id === subAnswer.questionId);
+                            const studentAnswer = subAnswer.studentAnswer;
 
-                        if (question && studentAnswer !== null && studentAnswer !== undefined) {
-                            if (question.type === 'single_choice' || question.type === 'multiple_choice') {
-                                const studentValues = studentAnswer.split(',').map(s => s.trim()).filter(s => s !== '');
-                                studentValues.forEach(val => {
-                                    questionItem.find(`input[value="${escapeHtml(val)}"]`).prop('checked', true);
-                                });
-                            } else if (question.type === 'fill_blank' || question.type === 'essay') {
-                                questionItem.find(`textarea[name="q${question.id}"]`).val(studentAnswer);
-                            }
-
-                            if (isReadOnly) {
-                                const previousAnswerDiv = questionItem.find('.previous-answer');
-                                let displayedAnswer = escapeHtml(studentAnswer || '未作答');
-                                if ((question.type === 'single_choice' || question.type === 'multiple_choice') && Array.isArray(question.options)) {
-                                    const studentValues = studentAnswer.split(',').map(s => s.trim().toLowerCase()).filter(s => s !== '');
-                                    const studentLabels = studentValues.map(val => {
-                                        const optIndex = question.options.findIndex(opt => opt && opt.trim().toLowerCase() === val);
-                                        return optIndex !== -1 ? String.fromCharCode(65 + optIndex) : escapeHtml(val);
-                                    }).join(', ');
-                                    displayedAnswer = studentLabels || '未作答';
+                            if (question && studentAnswer !== null && studentAnswer !== undefined) {
+                                if (question.type === 'single_choice' || question.type === 'multiple_choice') {
+                                    const studentValues = studentAnswer.split(',').map(s => s.trim()).filter(s => s !== '');
+                                    studentValues.forEach(val => {
+                                        questionItem.find(`input[value="${escapeHtml(val)}"]`).prop('checked', true);
+                                    });
                                 } else if (question.type === 'fill_blank' || question.type === 'essay') {
-                                    displayedAnswer = escapeHtml(studentAnswer.replace(/\n/g, '<br>') || '未作答');
+                                    questionItem.find(`textarea[name="q${question.id}"]`).val(studentAnswer);
                                 }
-                                previousAnswerDiv.find('.answer-text').html(displayedAnswer);
-                                previousAnswerDiv.show();
 
-                                if (subAnswer.grade !== null && subAnswer.grade !== undefined) {
-                                    const gradeDiv = questionItem.find('.grade');
-                                    gradeDiv.find('.grade-text').text(parseFloat(subAnswer.grade).toFixed(2));
-                                    gradeDiv.show();
-                                }
-                                if (subAnswer.feedback && subAnswer.feedback.trim() !== '') {
-                                    const feedbackDiv = questionItem.find('.feedback');
-                                    feedbackDiv.find('.feedback-text').text(escapeHtml(subAnswer.feedback));
-                                    feedbackDiv.show();
-                                }
-                                if (subAnswer.isCorrect !== null && subAnswer.isCorrect !== undefined) {
-                                    previousAnswerDiv.removeClass('is-correct is-incorrect');
-                                    if (subAnswer.isCorrect) {
-                                        previousAnswerDiv.addClass('is-correct');
-                                    } else {
-                                        previousAnswerDiv.addClass('is-incorrect');
+                                if (isReadOnly) {
+                                    const previousAnswerDiv = questionItem.find('.previous-answer');
+                                    let displayedAnswer = escapeHtml(studentAnswer || '未作答');
+                                    if ((question.type === 'single_choice' || question.type === 'multiple_choice') && Array.isArray(question.options)) {
+                                        const studentValues = studentAnswer.split(',').map(s => s.trim().toLowerCase()).filter(s => s !== '');
+                                        const studentLabels = studentValues.map(val => {
+                                            const optIndex = question.options.findIndex(opt => opt && opt.trim().toLowerCase() === val);
+                                            return optIndex !== -1 ? String.fromCharCode(65 + optIndex) : escapeHtml(val);
+                                        }).join(', ');
+                                        displayedAnswer = studentLabels || '未作答';
+                                    } else if (question.type === 'fill_blank' || question.type === 'essay') {
+                                        displayedAnswer = escapeHtml(studentAnswer.replace(/\n/g, '<br>') || '未作答');
                                     }
-                                }
+                                    previousAnswerDiv.find('.answer-text').html(displayedAnswer);
+                                    previousAnswerDiv.show();
 
-                                if (question.correctAnswer && question.correctAnswer.trim() !== '') {
+                                    if (subAnswer.grade !== null && subAnswer.grade !== undefined) {
+                                        const gradeDiv = questionItem.find('.grade');
+                                        gradeDiv.find('.grade-text').text(parseFloat(subAnswer.grade).toFixed(2));
+                                        gradeDiv.show();
+                                    }
+                                    if (subAnswer.feedback && subAnswer.feedback.trim() !== '') {
+                                        const feedbackDiv = questionItem.find('.feedback');
+                                        feedbackDiv.find('.feedback-text').text(escapeHtml(subAnswer.feedback));
+                                        feedbackDiv.show();
+                                    }
+                                    if (subAnswer.isCorrect !== null && subAnswer.isCorrect !== undefined) {
+                                        previousAnswerDiv.removeClass('is-correct is-incorrect');
+                                        if (subAnswer.isCorrect) {
+                                            previousAnswerDiv.addClass('is-correct');
+                                        } else {
+                                            previousAnswerDiv.addClass('is-incorrect');
+                                        }
+                                    }
+
+                                    if (question.correctAnswer && question.correctAnswer.trim() !== '') {
+                                        const correctAnswerDiv = questionItem.find('.correct-answer');
+                                        let formattedCorrectAnswer = escapeHtml(question.correctAnswer);
+                                        if ((question.type === 'single_choice' || question.type === 'multiple_choice') && Array.isArray(question.options)) {
+                                            const correctValues = question.correctAnswer.split(',').map(s => s.trim().toLowerCase()).filter(s => s !== '');
+                                            const correctLabels = correctValues.map(val => {
+                                                const optIndex = question.options.findIndex(opt => opt && opt.trim().toLowerCase() === val);
+                                                return optIndex !== -1 ? String.fromCharCode(65 + optIndex) : escapeHtml(val);
+                                            }).join(', ');
+                                            formattedCorrectAnswer = correctLabels || formattedCorrectAnswer;
+                                        } else if (question.type === 'fill_blank' || question.type === 'essay') {
+                                            formattedCorrectAnswer = escapeHtml(question.correctAnswer.replace(/\n/g, '<br>') || '无');
+                                        }
+                                        correctAnswerDiv.find('.answer-text').html(formattedCorrectAnswer);
+                                        correctAnswerDiv.show();
+                                    }
+
+
+                                    setTimeout(() => {
+                                        previousAnswerDiv.addClass('fade-in');
+                                        questionItem.find('.grade').addClass('fade-in');
+                                        questionItem.find('.feedback').addClass('fade-in');
+                                        questionItem.find('.correct-answer').addClass('fade-in');
+                                    }, 200);
+                                }
+                            }
+                        }
+                    });
+                } else {
+                    hasPreviousSubmission = false;
+                    if (isReadOnly) {
+                        globalQuestions.forEach(question => {
+                            if (question.correctAnswer && question.correctAnswer.trim() !== '') {
+                                const questionItem = $(`div.question-item[data-qid="${question.id}"]`);
+                                if (questionItem.length > 0) {
                                     const correctAnswerDiv = questionItem.find('.correct-answer');
                                     let formattedCorrectAnswer = escapeHtml(question.correctAnswer);
                                     if ((question.type === 'single_choice' || question.type === 'multiple_choice') && Array.isArray(question.options)) {
@@ -628,21 +677,16 @@
                                     }
                                     correctAnswerDiv.find('.answer-text').html(formattedCorrectAnswer);
                                     correctAnswerDiv.show();
+                                    setTimeout(() => {
+                                        correctAnswerDiv.addClass('fade-in');
+                                    }, 200);
                                 }
-
-
-                                // Apply fade-in animation to all relevant divs
-                                setTimeout(() => {
-                                    previousAnswerDiv.addClass('fade-in');
-                                    questionItem.find('.grade').addClass('fade-in');
-                                    questionItem.find('.feedback').addClass('fade-in');
-                                    questionItem.find('.correct-answer').addClass('fade-in'); // Fade in correct answer
-                                }, 200);
                             }
-                        }
+                        });
                     }
-                });
+                }
             } else {
+                console.error("加载之前答案失败:", response.message);
                 hasPreviousSubmission = false;
                 if (isReadOnly) {
                     globalQuestions.forEach(question => {
@@ -686,9 +730,35 @@
             }
 
 
-        }).fail(function(xhr, status, error) {
-            console.error("Error loading previous answers:", error);
+        }).fail(function(xhr) {
+            console.error("加载之前答案请求失败:", xhr);
             hasPreviousSubmission = false;
+            if (isReadOnly) {
+                globalQuestions.forEach(question => {
+                    if (question.correctAnswer && question.correctAnswer.trim() !== '') {
+                        const questionItem = $(`div.question-item[data-qid="${question.id}"]`);
+                        if (questionItem.length > 0) {
+                            const correctAnswerDiv = questionItem.find('.correct-answer');
+                            let formattedCorrectAnswer = escapeHtml(question.correctAnswer);
+                            if ((question.type === 'single_choice' || question.type === 'multiple_choice') && Array.isArray(question.options)) {
+                                const correctValues = question.correctAnswer.split(',').map(s => s.trim().toLowerCase()).filter(s => s !== '');
+                                const correctLabels = correctValues.map(val => {
+                                    const optIndex = question.options.findIndex(opt => opt && opt.trim().toLowerCase() === val);
+                                    return optIndex !== -1 ? String.fromCharCode(65 + optIndex) : escapeHtml(val);
+                                }).join(', ');
+                                formattedCorrectAnswer = correctLabels || formattedCorrectAnswer;
+                            } else if (question.type === 'fill_blank' || question.type === 'essay') {
+                                formattedCorrectAnswer = escapeHtml(question.correctAnswer.replace(/\n/g, '<br>') || '无');
+                            }
+                            correctAnswerDiv.find('.answer-text').html(formattedCorrectAnswer);
+                            correctAnswerDiv.show();
+                            setTimeout(() => {
+                                correctAnswerDiv.addClass('fade-in');
+                            }, 200);
+                        }
+                    }
+                });
+            }
             if (!isReadOnly) {
                 $('.submit-btn').html('<i class="fas fa-check-circle mr-2"></i> 提交练习');
             }
@@ -730,26 +800,32 @@
             contentType: 'application/json',
             data: JSON.stringify(payload),
             success(response) {
-                let message = '提交成功🎉';
-                if (response && response.operation === 'updated') {
-                    message = '修改成功🎉';
-                } else if (response && response.message) {
-                    message = response.message;
-                }
-                alert(message);
-                if (response && response.operation === 'updated') {
-                    submitBtn.html('<i class="fas fa-save mr-2"></i> 修改成功');
-                } else {
-                    submitBtn.html('<i class="fas fa-check-circle mr-2"></i> 提交成功');
-                }
+                if (response.success) {
+                    let message = '提交成功🎉';
+                    if (response.operation === 'updated') {
+                        message = '修改成功🎉';
+                    } else if (response.message) {
+                        message = response.message;
+                    }
+                    alert(message);
+                    if (response.operation === 'updated') {
+                        submitBtn.html('<i class="fas fa-save mr-2"></i> 修改成功');
+                    } else {
+                        submitBtn.html('<i class="fas fa-check-circle mr-2"></i> 提交成功');
+                    }
 
-                setTimeout(() => {
-                    if (lessonId) window.location.href = `/Anotherview/html/student/student-list-practice.html?lesson_id=${lessonId}`;
-                    else history.back();
-                }, 1500);
+                    setTimeout(() => {
+                        if (lessonId) window.location.href = `/Anotherview/html/student/student-list-practice.html?lesson_id=${lessonId}`;
+                        else history.back();
+                    }, 1500);
+                } else {
+                    console.error("提交失败:", response.message);
+                    submitBtn.prop('disabled', false).html(originalButtonText);
+                    alert('提交失败: ' + (response.message || '未知错误'));
+                }
             },
             error(xhr) {
-                console.error("Submission failed:", xhr);
+                console.error("提交失败:", xhr);
                 submitBtn.prop('disabled', false).html(originalButtonText);
                 alert('提交失败: ' + (xhr.responseJSON?.message || xhr.statusText || '未知错误'));
             }

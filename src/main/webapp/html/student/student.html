@@ -202,35 +202,52 @@
     function loadCourses() {
         $("#courseList").empty();
 
-        $.get("/Anotherview/api/studentInfo", function(student) {
-            $("#studentName").text(student.name);
+        $.get("/Anotherview/api/studentInfo", function(response) {
+            if (response.success && response.student) {
+                const student = response.student;
+                $("#studentName").text(student.name);
 
-            $.get(`/Anotherview/api/student/studentLessons?studentNumber=${student.studentNumber}`, function(lessons) {
-                if (lessons.length === 0) {
-                    $("#courseList").html('<p class="text-gray-500 text-center col-span-full">没有找到您参加的课程。</p>');
-                    return;
-                }
+                $.get(`/Anotherview/api/student/studentLessons?studentNumber=${student.studentNumber}`, function(lessonsResponse) {
+                    if (lessonsResponse.success && lessonsResponse.lessons) {
+                        const lessons = lessonsResponse.lessons;
+                        if (lessons.length === 0) {
+                            $("#courseList").html('<p class="text-gray-500 text-center col-span-full">没有找到您参加的课程。</p>');
+                            return;
+                        }
 
-                lessons.forEach((lesson, index) => {
-                    const listItem = $("<li>")
-                        .addClass('course-item bg-white p-6 rounded-lg shadow-md border border-gray-200 cursor-pointer flex items-center')
-                        .html(`<i class="fas fa-book text-indigo-500 mr-4 text-xl" aria-hidden="true"></i> ${escapeHtml(lesson.title)}`)
-                        .click(() => {
-                            window.location.href = `student-list-practice.html?lesson_id=${lesson.id}`;
+                        lessons.forEach((lesson, index) => {
+                            const listItem = $("<li>")
+                                .addClass('course-item bg-white p-6 rounded-lg shadow-md border border-gray-200 cursor-pointer flex items-center')
+                                .html(`<i class="fas fa-book text-indigo-500 mr-4 text-xl" aria-hidden="true"></i> ${escapeHtml(lesson.title)}`)
+                                .click(() => {
+                                    window.location.href = `student-list-practice.html?lesson_id=${lesson.id}`;
+                                });
+
+                            $("#courseList").append(listItem);
+
+                            setTimeout(() => {
+                                listItem.addClass('fade-in');
+                            }, 100 * index);
                         });
-
-                    $("#courseList").append(listItem);
-
-                    setTimeout(() => {
-                        listItem.addClass('fade-in');
-                    }, 100 * index);
+                    } else {
+                        console.error('获取课程列表失败:', lessonsResponse.message);
+                        $("#courseList").html('<p class="text-red-500 text-center col-span-full"><i class="fas fa-exclamation-circle mr-2"></i>加载课程列表失败: ' + (lessonsResponse.message || '未知错误') + '</p>');
+                    }
+                }).fail(function(xhr) {
+                    console.error("获取课程列表请求失败:", xhr);
+                    $("#courseList").html('<p class="text-red-500 text-center col-span-full"><i class="fas fa-exclamation-circle mr-2"></i>加载课程列表失败。</p>');
                 });
-            }).fail(function() {
-                $("#courseList").html('<p class="text-red-500 text-center col-span-full"><i class="fas fa-exclamation-circle mr-2"></i>加载课程列表失败。</p>');
-            });
-        }).fail(function() {
+            } else {
+                console.error('获取学生信息失败:', response.message);
+                $("#studentName").text("未知用户");
+                alert('获取学生信息失败: ' + (response.message || '未知错误') + '，请重新登录。');
+                location.href = "/Anotherview/html/student/student-login.html";
+            }
+        }).fail(function(xhr) {
+            console.error("获取学生信息请求失败:", xhr);
             $("#studentName").text("未知用户");
-            console.error("Failed to get student info");
+            alert('获取学生信息失败，请稍后再试。');
+            location.href = "/Anotherview/html/student/student-login.html";
         });
     }
 

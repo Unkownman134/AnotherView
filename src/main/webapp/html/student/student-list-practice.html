@@ -349,9 +349,15 @@
     const lessonId = urlParams.get('lesson_id');
 
     $(function () {
-        $.get(`/Anotherview/api/student/lessonInfo?lesson_id=${lessonId}`, function (lesson) {
-            $('#lessonTitle').append(`: ${escapeHtml(lesson.title)}`);
-        }).fail(function() {
+        $.get(`/Anotherview/api/student/lessonInfo?lesson_id=${lessonId}`, function (response) {
+            if (response.success && response.lesson) {
+                $('#lessonTitle').append(`: ${escapeHtml(response.lesson.title)}`);
+            } else {
+                console.error('课程信息加载失败:', response.message);
+                $('#lessonTitle').append(': 课程信息加载失败');
+            }
+        }).fail(function(xhr) {
+            console.error("获取课程信息请求失败:", xhr);
             $('#lessonTitle').append(': 课程信息加载失败');
         });
 
@@ -373,13 +379,23 @@
             `);
         }
 
-        $.get(`/Anotherview/api/student/practices?lesson_id=${lessonId}`, function (practices) {
+        $.get(`/Anotherview/api/student/practices?lesson_id=${lessonId}`, function (response) {
             setTimeout(() => {
-                renderPractices(practices);
+                $("#loading-message").hide();
+                if (response.success && response.practices) {
+                    renderPractices(response.practices);
+                } else {
+                    console.error("获取练习列表失败:", response.message);
+                    $('#practiceList').html('');
+                    $("#no-data-message").html(`
+                        <i class="fas fa-exclamation-circle text-4xl mb-2 text-red-400" aria-hidden="true"></i>
+                        <p>加载练习列表失败: ${response.message || '未知错误'}</p>
+                    `).show();
+                }
             }, 500);
-        }).fail(function(xhr, status, error) {
+        }).fail(function(xhr) {
             setTimeout(() => {
-                console.error("Error loading practices:", error);
+                console.error("获取练习列表请求失败:", xhr);
                 $('#practiceList').html('');
                 $("#loading-message").hide();
                 $("#no-data-message").html(`
@@ -393,8 +409,6 @@
     function renderPractices(practices) {
         const tbody = $('#practiceList');
         tbody.empty();
-
-        $("#loading-message").hide();
 
         if (practices.length === 0) {
             $("#no-data-message").html(`
@@ -411,15 +425,17 @@
             const statusClass = status === 'not_started' ? "status-notstarted" : status === 'ended' ? "status-ended" : "status-inprogress";
 
             let completionDisplay = '-';
-            if (status !== 'not_started' && practice.completedQuestions !== undefined && practice.questionNum !== undefined && practice.questionNum > 0) {
-                completionDisplay = `${practice.completedQuestions}/${practice.questionNum}`;
-            } else if (status !== 'not_started' && practice.questionNum === 0) {
-                completionDisplay = '0/0';
+            if (status !== 'not_started' && practice.completedQuestions !== undefined && practice.questionNum !== undefined) {
+                if (practice.questionNum > 0) {
+                    completionDisplay = `${practice.completedQuestions}/${practice.questionNum}`;
+                } else {
+                    completionDisplay = '0/0';
+                }
             }
 
             let scoreDisplay = '-';
-            if (status === 'ended' && practice.obtainedScore !== null && practice.totalScore !== null) {
-                scoreDisplay = `${practice.obtainedScore !== undefined ? practice.obtainedScore.toFixed(2) : '-'} / ${practice.totalScore !== undefined ? practice.totalScore.toFixed(2) : '-'}`;
+            if (status === 'ended' && practice.obtainedScore !== null && practice.obtainedScore !== undefined && practice.totalScore !== null && practice.totalScore !== undefined) {
+                scoreDisplay = `${practice.obtainedScore.toFixed(2)} / ${practice.totalScore.toFixed(2)}`;
             }
 
             let buttonHtml = '';
@@ -440,7 +456,6 @@
                          </button>
                      `;
             }
-
 
             const endAt = practice.endAt ? new Date(practice.endAt).toLocaleString() : '无截止时间';
 
