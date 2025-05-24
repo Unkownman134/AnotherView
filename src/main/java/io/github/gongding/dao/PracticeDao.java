@@ -325,11 +325,14 @@ public class PracticeDao {
      * 这个方法执行更新操作
      * @param practiceId 练习ID
      * @param newEndTime 新的截止时间
+     * @return 如果延长成功返回true，否则返回false。
      */
-    public void extendPracticeTime(int practiceId, LocalDateTime newEndTime) {
+    public boolean extendPracticeTime(int practiceId, LocalDateTime newEndTime) {
         logger.info("尝试延长练习 ID {} 的截止时间到 {}", practiceId, newEndTime);
         Connection conn = null;
         PreparedStatement pstmt = null;
+        boolean success = false;
+
         try {
             conn = DBUtils.getConnection();
             String sql = "UPDATE practice SET end_time = ? WHERE practice_id = ?";
@@ -343,6 +346,7 @@ public class PracticeDao {
             if (affectedRows > 0) {
                 logger.debug("成功更新练习 ID {} 的截止时间。", practiceId);
                 updatePracticeStatus(practiceId);
+                success = true;
             } else {
                 logger.warn("更新练习 ID {} 的截止时间失败，可能该练习不存在。", practiceId);
             }
@@ -353,7 +357,8 @@ public class PracticeDao {
             DBUtils.close(conn, pstmt);
             logger.debug("关闭数据库资源。");
         }
-        logger.info("完成延长练习 ID {} 截止时间操作。", practiceId);
+        logger.info("完成延长练习 ID {} 截止时间操作，结果: {}", practiceId, success ? "成功" : "失败");
+        return success;
     }
 
     /**
