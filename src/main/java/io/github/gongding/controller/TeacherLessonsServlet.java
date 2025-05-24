@@ -3,9 +3,9 @@ package io.github.gongding.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import io.github.gongding.dao.LessonDao;
 import io.github.gongding.entity.LessonEntity;
 import io.github.gongding.entity.TeacherEntity;
+import io.github.gongding.service.LessonService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 public class TeacherLessonsServlet extends HttpServlet {
     private static final Logger logger = LoggerFactory.getLogger(TeacherLessonsServlet.class);
 
-    private final LessonDao lessonDao = new LessonDao();
+    private final LessonService lessonService = new LessonService();
     private final ObjectMapper mapper = new ObjectMapper();
 
     public TeacherLessonsServlet() {
@@ -51,8 +51,8 @@ public class TeacherLessonsServlet extends HttpServlet {
         logger.debug("教师已登录，姓名: {} (ID: {})。", teacherName, teacherId);
 
         try {
-            logger.debug("调用 LessonDao 获取教师 ID {} 负责的课程列表。", teacherId);
-            List<LessonEntity> lessons = lessonDao.getLessonsByTeacherId(teacherId);
+            logger.debug("调用 LessonService 获取教师 ID {} 负责的课程列表。", teacherId);
+            List<LessonEntity> lessons = lessonService.getLessonsByTeacherId(teacherId);
             logger.debug("成功获取教师 ID {} 负责的 {} 门课程。", teacherId, (lessons != null ? lessons.size() : 0));
 
             resp.setContentType("application/json;charset=utf-8");

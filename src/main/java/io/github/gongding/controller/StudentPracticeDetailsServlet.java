@@ -3,9 +3,9 @@ package io.github.gongding.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import io.github.gongding.dao.PracticeDao;
 import io.github.gongding.entity.PracticeEntity;
 import io.github.gongding.entity.StudentEntity;
+import io.github.gongding.service.StudentPracticeService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 @WebServlet("/api/student/practiceDetails")
 public class StudentPracticeDetailsServlet extends HttpServlet {
     private static final Logger logger = LoggerFactory.getLogger(StudentPracticeDetailsServlet.class);
-    private final PracticeDao practiceDao = new PracticeDao();
+    private final StudentPracticeService studentPracticeService = new StudentPracticeService();
     private final ObjectMapper mapper = new ObjectMapper();
 
     public StudentPracticeDetailsServlet() {
@@ -40,11 +40,15 @@ public class StudentPracticeDetailsServlet extends HttpServlet {
         logger.info("收到来自 IP 地址 {} 的 GET 请求: {} (获取学生练习详情)。", remoteAddr, requestUrl);
 
         resp.setContentType("application/json;charset=utf-8");
+        Map<String, Object> responseMap = new HashMap<>();
 
         HttpSession session = req.getSession(false);
         if (session == null || session.getAttribute("student") == null) {
             logger.warn("未登录或会话已过期，拒绝访问 {}。", requestUrl);
-            resp.sendError(HttpServletResponse.SC_UNAUTHORIZED, "未登录或会话已过期");
+            resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            responseMap.put("success", false);
+            responseMap.put("message", "未登录或会话已过期");
+            mapper.writeValue(resp.getWriter(), responseMap);
             return;
         }
         StudentEntity student = (StudentEntity) session.getAttribute("student");
@@ -55,7 +59,10 @@ public class StudentPracticeDetailsServlet extends HttpServlet {
 
         if (practiceIdStr == null || practiceIdStr.trim().isEmpty()) {
             logger.warn("缺少练习ID参数，拒绝访问 {}。", requestUrl);
-            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "缺少练习ID参数");
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            responseMap.put("success", false);
+            responseMap.put("message", "缺少练习 ID 参数");
+            mapper.writeValue(resp.getWriter(), responseMap);
             return;
         }
 
@@ -65,12 +72,15 @@ public class StudentPracticeDetailsServlet extends HttpServlet {
 
             if (practiceId <= 0) {
                 logger.warn("无效的练习ID格式 (非正数): {}，拒绝访问 {}。", practiceIdStr, requestUrl);
-                resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "无效的练习ID");
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                responseMap.put("success", false);
+                responseMap.put("message", "无效练习 ID");
+                mapper.writeValue(resp.getWriter(), responseMap);
                 return;
             }
 
-            logger.debug("调用 PracticeDao 获取练习 ID {} 的详情。", practiceId);
-            PracticeEntity practice = practiceDao.getPracticeById(practiceId);
+            logger.debug("调用 StudentPracticeService 获取练习 ID {} 的详情。", practiceId);
+            PracticeEntity practice = studentPracticeService.getPracticeById(practiceId);
 
             if (practice != null) {
                 logger.debug("成功获取练习 ID {} 的详情，返回给客户端。", practiceId);
@@ -81,18 +91,30 @@ public class StudentPracticeDetailsServlet extends HttpServlet {
                 practiceDetails.put("startAt", practice.getStartAt());
                 practiceDetails.put("endAt", practice.getEndAt());
 
-                mapper.writeValue(resp.getWriter(), practiceDetails);
+                responseMap.put("success", true);
+                responseMap.put("practiceDetails", practiceDetails);
+                responseMap.put("message", "成功检索到练习详情。");
+                resp.setStatus(HttpServletResponse.SC_OK);
             } else {
                 logger.warn("未找到练习 ID {} 的详情。", practiceId);
-                resp.sendError(HttpServletResponse.SC_NOT_FOUND, "未找到该练习");
+                responseMap.put("success", false);
+                responseMap.put("message", "未找到练习");
+                resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
             }
+            mapper.writeValue(resp.getWriter(), responseMap);
 
         } catch (NumberFormatException e) {
-            logger.warn("练习ID格式不正确: {}，拒绝访问 {}。", practiceIdStr, requestUrl, e);
-            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "练习ID格式不正确");
+            logger.warn("无效的练习 ID 格式: {}，拒绝访问 {}。", practiceIdStr, requestUrl, e);
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            responseMap.put("success", false);
+            responseMap.put("message", "无效练习 ID 格式");
+            mapper.writeValue(resp.getWriter(), responseMap);
         } catch (Exception e) {
-            logger.error("处理学生练习详情请求时发生异常，练习ID: {}", practiceIdStr, e);
-            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "服务器内部错误");
+            logger.error("处理学生练习详情请求时发生错误，练习 ID: {}。", practiceIdStr, e);
+            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            responseMap.put("success", false);
+            responseMap.put("message", "内部服务器错误: " + e.getMessage());
+            mapper.writeValue(resp.getWriter(), responseMap);
         }
         logger.info("完成处理 GET 请求: {} (获取学生练习详情)。", requestUrl);
     }

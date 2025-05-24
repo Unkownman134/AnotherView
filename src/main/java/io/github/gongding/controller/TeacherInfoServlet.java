@@ -3,8 +3,8 @@ package io.github.gongding.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import io.github.gongding.dao.TeacherDao;
 import io.github.gongding.entity.TeacherEntity;
+import io.github.gongding.service.TeacherService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 public class TeacherInfoServlet extends HttpServlet {
     private static final Logger logger = LoggerFactory.getLogger(TeacherInfoServlet.class);
     private final ObjectMapper mapper = new ObjectMapper();
-    private final TeacherDao teacherDao = new TeacherDao();
+    private final TeacherService teacherService = new TeacherService();
 
     public TeacherInfoServlet() {
         logger.debug("TeacherInfoServlet 构造方法执行。");
@@ -48,8 +48,8 @@ public class TeacherInfoServlet extends HttpServlet {
         logger.debug("教师已登录，Session 中的教师姓名: {}", teacherName);
 
         try {
-            logger.debug("调用 TeacherDao 获取教师姓名 '{}' 的最新信息。", teacherName);
-            TeacherEntity freshTeacher = teacherDao.getTeacherByTeacherName(teacherName);
+            logger.debug("调用 TeacherService 获取教师姓名 '{}' 的最新信息。", teacherName);
+            TeacherEntity freshTeacher = teacherService.getTeacherByTeacherName(teacherName);
 
             response.setContentType("application/json;charset=utf-8");
             if (freshTeacher != null) {

@@ -55,4 +55,21 @@ public class ClassService {
             return false;
         }
     }
+
+    /**
+     * 根据教师ID获取班级列表的业务逻辑
+     * @param teacherId 教师ID
+     * @return 班级实体列表
+     */
+    public List<ClassEntity> getClassesByTeacherId(int teacherId) {
+        logger.info("尝试获取教师 ID {} 关联的班级列表。", teacherId);
+        try {
+            List<ClassEntity> classes = classDao.getClassesByTeacherId(teacherId);
+            logger.debug("成功从 DAO 获取教师 ID {} 关联的 {} 个班级。", teacherId, classes.size());
+            return classes;
+        } catch (Exception e) {
+            logger.error("获取教师 ID {} 关联的班级列表时发生异常。", teacherId, e);
+            return null;
+        }
+    }
 }

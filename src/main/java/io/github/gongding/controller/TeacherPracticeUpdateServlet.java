@@ -2,8 +2,11 @@ package io.github.gongding.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.gongding.dao.PracticeDao;
+// 移除对 PracticeDao 的直接引用
+// import io.github.gongding.dao.PracticeDao;
+import io.github.gongding.entity.PracticeEntity; // 导入 PracticeEntity
 import io.github.gongding.entity.TeacherEntity;
+import io.github.gongding.service.TeacherPracticeService; // 导入 TeacherPracticeService
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -26,7 +29,8 @@ import org.slf4j.LoggerFactory;
 @WebServlet("/api/teacher/practice/update")
 public class TeacherPracticeUpdateServlet extends HttpServlet {
     private static final Logger logger = LoggerFactory.getLogger(TeacherPracticeUpdateServlet.class);
-    private final PracticeDao practiceDao = new PracticeDao();
+    // 将直接使用 PracticeDao 改为使用 TeacherPracticeService
+    private final TeacherPracticeService teacherPracticeService = new TeacherPracticeService();
     private final ObjectMapper mapper = new ObjectMapper();
 
     @Override
@@ -114,9 +118,21 @@ public class TeacherPracticeUpdateServlet extends HttpServlet {
                 return;
             }
 
-            logger.debug("调用 PracticeDao.updatePracticeAndQuestions 更新练习 ID {}。", practiceId);
-            boolean success = practiceDao.updatePracticeAndQuestions(practiceId, title, classof, startTime, endTime, questionIds);
-            logger.debug("PracticeDao.updatePracticeAndQuestions 返回结果: {}", success);
+            // 构建 PracticeEntity 对象
+            PracticeEntity practiceToUpdate = new PracticeEntity();
+            practiceToUpdate.setId(practiceId);
+            practiceToUpdate.setTitle(title);
+            practiceToUpdate.setClassof(classof);
+            practiceToUpdate.setStartAt(startTime);
+            practiceToUpdate.setEndAt(endTime);
+            // 注意：lessonId, semesterId, teacherId, questionNum, status, createdAt 等字段
+            // 如果在更新时不需要修改，则不需要从请求中获取并设置。
+            // 如果需要修改，则需要从请求中获取。这里只处理了当前Servlet中已有的字段。
+
+            // 调用 Service 层更新练习
+            logger.debug("调用 TeacherPracticeService.updatePracticeAndQuestions 更新练习 ID {}。", practiceId);
+            boolean success = teacherPracticeService.updatePracticeAndQuestions(practiceToUpdate, questionIds);
+            logger.debug("TeacherPracticeService.updatePracticeAndQuestions 返回结果: {}", success);
 
             resp.setContentType("application/json");
             Map<String, Object> responseMap = new HashMap<>();

@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import io.github.gongding.dao.PracticeDao;
 import io.github.gongding.entity.TeacherEntity;
+import io.github.gongding.service.TeacherPracticeService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 @WebServlet("/api/teacher/practice/extendTime")
 public class TeacherExtendTimeServlet extends HttpServlet {
     private static final Logger logger = LoggerFactory.getLogger(TeacherExtendTimeServlet.class);
-    private final PracticeDao practiceDao = new PracticeDao();
+    private final TeacherPracticeService teacherPracticeService = new TeacherPracticeService();
     private final ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule())
             .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
@@ -40,7 +40,7 @@ public class TeacherExtendTimeServlet extends HttpServlet {
         HttpSession session = req.getSession(false);
         if (session == null || session.getAttribute("teacher") == null) {
             logger.warn("未登录或会话过期，拒绝访问 {}。", requestUrl);
-            resp.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
+            resp.sendError(HttpServletResponse.SC_UNAUTHORIZED, "未授权访问");
             return;
         }
         TeacherEntity teacher = (TeacherEntity) session.getAttribute("teacher");
@@ -49,58 +49,57 @@ public class TeacherExtendTimeServlet extends HttpServlet {
         logger.debug("教师已登录，姓名: {} (ID: {})。", teacherName, teacherId);
 
         try {
-            //从请求的输入流中读取所有行，并使用系统换行符连接成一个完整的JSON字符串
-            logger.debug("尝试从请求体读取 JSON 数据。");
+            logger.debug("尝试从请求体读取并解析 JSON 数据。");
             String jsonBody = req.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
             logger.debug("请求体 JSON 字符串: {}", jsonBody);
             JsonNode rootNode = mapper.readTree(jsonBody);
             logger.debug("成功解析请求体 JSON 数据。");
 
-            //从JSON树结构中获取"practiceId"字段的值，并将其作为整数
             JsonNode practiceIdNode = rootNode.get("practiceId");
+            JsonNode newEndTimeNode = rootNode.get("newEndTime");
+
             if (practiceIdNode == null || !practiceIdNode.isInt()) {
                 logger.warn("JSON 数据中缺少或格式错误的 practiceId 字段。");
-                resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing or invalid practiceId");
+                resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid practiceId");
                 return;
             }
-            int practiceId = practiceIdNode.asInt();
-            logger.debug("从 JSON 数据中获取 practiceId: {}", practiceId);
-
-            if (practiceId <= 0) {
-                logger.warn("无效的练习ID (非正数): {}，拒绝处理。", practiceId);
-                resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid practice ID");
-                return;
-            }
-
-            JsonNode newEndTimeNode = rootNode.get("newEndTime");
             if (newEndTimeNode == null || !newEndTimeNode.isTextual()) {
                 logger.warn("JSON 数据中缺少或格式错误的 newEndTime 字段。");
-                resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing or invalid newEndTime");
+                resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid newEndTime");
                 return;
             }
-            String newEndTimeStr = newEndTimeNode.asText();
-            logger.debug("从 JSON 数据中获取 newEndTime 字符串: {}", newEndTimeStr);
 
+            int practiceId = practiceIdNode.asInt();
             LocalDateTime newEndTime;
             try {
-                newEndTime = LocalDateTime.parse(newEndTimeStr, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+                newEndTime = LocalDateTime.parse(newEndTimeNode.asText(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
                 logger.debug("成功解析新的截止时间: {}", newEndTime);
             } catch (DateTimeParseException e) {
-                logger.warn("新的截止时间格式不正确: {}", newEndTimeStr, e);
+                logger.warn("新的截止时间格式不正确: {}。", newEndTimeNode.asText(), e);
                 resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid newEndTime format");
                 return;
             }
 
-            logger.debug("调用 PracticeDao.extendPracticeTime 延长练习 {} 的截止时间到 {}", practiceId, newEndTime);
-            practiceDao.extendPracticeTime(practiceId, newEndTime);
-            logger.info("成功延长练习 ID {} 的截止时间。", practiceId);
+            logger.debug("调用 TeacherPracticeService.extendPracticeTime 延长练习 {} 的截止时间到 {}", practiceId, newEndTime);
+            boolean success = teacherPracticeService.extendPracticeTime(practiceId, newEndTime);
+            logger.debug("TeacherPracticeService.extendPracticeTime 返回结果: {}", success);
 
             resp.setContentType("application/json");
-            Map<String, Object> successResponse = new HashMap<>();
-            successResponse.put("success", true);
-            successResponse.put("message", "截止时间延长成功");
-            resp.getWriter().write(mapper.writeValueAsString(successResponse));
-            logger.debug("已向客户端返回成功响应。");
+            Map<String, Object> responseMap = new HashMap<>();
+            if (success) {
+                responseMap.put("success", true);
+                responseMap.put("message", "截止时间延长成功");
+                logger.info("成功延长练习 ID {} 的截止时间。", practiceId);
+                resp.getWriter().write(mapper.writeValueAsString(responseMap));
+                logger.debug("已向客户端返回成功响应。");
+            } else {
+                logger.error("延长练习 ID {} 的截止时间失败。", practiceId);
+                responseMap.put("success", false);
+                responseMap.put("message", "延长截止时间失败");
+                resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                resp.getWriter().write(mapper.writeValueAsString(responseMap));
+                logger.debug("已向客户端返回失败响应。");
+            }
 
         } catch (Exception e) {
             logger.error("延长练习截止时间时发生异常。", e);

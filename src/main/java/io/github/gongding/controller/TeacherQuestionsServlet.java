@@ -1,9 +1,9 @@
 package io.github.gongding.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.gongding.dao.QuestionDao;
 import io.github.gongding.entity.QuestionEntity;
-import io.github.gongding.entity.TeacherEntity; // 导入 TeacherEntity 用于获取教师ID
+import io.github.gongding.entity.TeacherEntity;
+import io.github.gongding.service.QuestionService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 @WebServlet("/api/teacher/questions")
 public class TeacherQuestionsServlet extends HttpServlet {
     private static final Logger logger = LoggerFactory.getLogger(TeacherQuestionsServlet.class);
-    private final QuestionDao questionDao = new QuestionDao();
+    private final QuestionService questionService = new QuestionService();
     private final ObjectMapper mapper = new ObjectMapper();
 
     @Override
@@ -65,8 +65,8 @@ public class TeacherQuestionsServlet extends HttpServlet {
         }
 
         try {
-            logger.debug("调用 QuestionDao 获取课程 ID {} 的题目列表。", lessonId);
-            List<QuestionEntity> questions = questionDao.getQuestionsByLessonId(lessonId);
+            logger.debug("调用 QuestionService 获取课程 ID {} 的题目列表。", lessonId);
+            List<QuestionEntity> questions = questionService.getQuestionsByLessonId(lessonId);
             logger.debug("成功获取课程 ID {} 的 {} 道题目。", lessonId, (questions != null ? questions.size() : 0));
 
             resp.setContentType("application/json;charset=utf-8");

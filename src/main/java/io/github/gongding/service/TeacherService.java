@@ -95,6 +95,21 @@ public class TeacherService {
     }
 
     /**
+     * 根据教师姓名获取教师实体业务逻辑。
+     * @param name 教师姓名
+     * @return 教师实体，如果未找到则返回null
+     */
+    public TeacherEntity getTeacherByTeacherName(String name) {
+        logger.info("尝试根据教师姓名 '{}' 获取教师实体。", name);
+        try {
+            return teacherDao.getTeacherByTeacherName(name);
+        } catch (Exception e) {
+            logger.error("根据教师姓名 '{}' 获取教师实体时发生异常。", name, e);
+            return null;
+        }
+    }
+
+    /**
      * 获取所有教师的业务逻辑
      * @return 教师实体列表
      */

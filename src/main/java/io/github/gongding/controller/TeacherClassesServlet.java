@@ -1,9 +1,9 @@
 package io.github.gongding.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.gongding.dao.ClassDao;
 import io.github.gongding.entity.ClassEntity;
 import io.github.gongding.entity.TeacherEntity;
+import io.github.gongding.service.ClassService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 @WebServlet("/api/teacher/classes")
 public class TeacherClassesServlet extends HttpServlet {
     private static final Logger logger = LoggerFactory.getLogger(TeacherClassesServlet.class);
-    private final ClassDao classDao = new ClassDao();
+    private final ClassService classService = new ClassService();
     private final ObjectMapper mapper = new ObjectMapper();
 
     @Override
@@ -42,8 +42,8 @@ public class TeacherClassesServlet extends HttpServlet {
 
 
         try {
-            logger.debug("调用 ClassDao 获取教师 ID {} 关联的班级列表。", teacherId);
-            List<ClassEntity> classes = classDao.getClassesByTeacherId(teacherId);
+            logger.debug("调用 ClassService 获取教师 ID {} 关联的班级列表。", teacherId);
+            List<ClassEntity> classes = classService.getClassesByTeacherId(teacherId);
             logger.debug("成功获取教师 ID {} 关联的 {} 个班级。", teacherId, (classes != null ? classes.size() : 0));
 
             resp.setContentType("application/json;charset=utf-8");
